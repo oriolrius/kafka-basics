@@ -1,0 +1,29 @@
+{
+  "type": "record",
+  "name": "TestMessage",
+  "namespace": "com.example.kafka",
+  "doc": "A simple test message schema for Kafka with Avro",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string",
+      "doc": "Unique identifier for the message"
+    },
+    {
+      "name": "message",
+      "type": "string",
+      "doc": "The main message content"
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "doc": "Unix timestamp when the message was created"
+    },
+    {
+      "name": "metadata",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "Optional metadata field"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "kafka-simple-producer",
+  "version": "1.0.0",
+  "description": "Simple Kafka producer with KafkaJS and Avro Schema Registry",
+  "main": "producer.js",
+  "scripts": {
+    "start": "node producer.js",
+    "start-avro": "node avro-producer.js",
+    "diagnose": "node diagnostic.js"
+  },
+  "dependencies": {
+    "kafkajs": "^2.2.4",
+    "dotenv": "^16.3.1",
+    "@kafkajs/confluent-schema-registry": "^3.3.0",
+    "avsc": "^5.7.7"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "id": "msg-12345",
+  "message": "Hello, this is a test message for Kafka with Avro serialization",
+  "timestamp": 1733961600000,
+  "metadata": "priority:high,source:api"
+}
