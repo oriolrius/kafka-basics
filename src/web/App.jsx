@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Producer from './components/Producer';
 import Consumer from './components/Consumer';
 import TopicInfo from './components/TopicInfo';
@@ -6,12 +6,37 @@ import MessageList from './components/MessageList';
 
 function App() {
   const [activeTab, setActiveTab] = useState('producer');
+  const [theme, setTheme] = useState(() => {
+    // Get saved theme or default to dark
+    return localStorage.getItem('kafka-theme') || 'dark';
+  });
+
+  useEffect(() => {
+    // Apply theme to document
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('kafka-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
 
   return (
     <div className="app">
       <header className="header">
-        <h1>🚀 Kafka Basics - Web UI</h1>
-        <p>Complete Kafka toolkit with producers, consumers, and admin tools</p>
+        <div className="header-content">
+          <div>
+            <h1>🚀 Kafka Basics - Web UI</h1>
+            <p>Complete Kafka toolkit with producers, consumers, and admin tools</p>
+          </div>
+          <button 
+            className="theme-toggle" 
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? '☀️ Light' : '🌙 Dark'}
+          </button>
+        </div>
       </header>
 
       <nav className="tabs">
