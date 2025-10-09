@@ -169,7 +169,8 @@ body {
 .producer,
 .consumer,
 .topic-info,
-.message-list {
+.message-list,
+.settings {
   background: var(--bg-elevated);
   padding: 2rem;
   border-radius: 12px;
@@ -498,4 +499,97 @@ button:disabled {
   .theme-toggle {
     width: 100%;
   }
+}
+
+/* Settings Component Styles */
+.settings-sections {
+  display: grid;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.settings-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.5rem;
+}
+
+.settings-section h3 {
+  font-size: 1.3rem;
+  color: var(--text);
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--border);
+}
+
+.field-hint {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-weight: 400;
+  margin-top: 0.25rem;
+}
+
+.form-group-checkbox {
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: flex-start;
+}
+
+.form-group-checkbox label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.form-group-checkbox input[type="checkbox"] {
+  margin-top: 0.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.form-group-checkbox span {
+  flex: 1;
+}
+
+.settings-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  flex-wrap: wrap;
+}
+
+.settings-note {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--warning);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-top: 2rem;
+}
+
+.settings-note h4 {
+  color: var(--warning);
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.settings-note ul {
+  margin-left: 1.5rem;
+  color: var(--text-secondary);
+  line-height: 1.8;
+}
+
+.settings-note li {
+  margin-bottom: 0.5rem;
+}
+
+.settings-note strong {
+  color: var(--text);
+  font-weight: 600;
 }

@@ -74,7 +74,7 @@ function MessageList() {
                   {msg.key && <span className="message-key">Key: {msg.key}</span>}
                   {msg.timestamp && (
                     <span className="message-time">
-                      {new Date(parseInt(msg.timestamp)).toLocaleString()}
+                      {new Date(Number(msg.timestamp)).toLocaleString()}
                     </span>
                   )}
                 </div>

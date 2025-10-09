@@ -3,6 +3,7 @@ import Producer from './components/Producer';
 import Consumer from './components/Consumer';
 import TopicInfo from './components/TopicInfo';
 import MessageList from './components/MessageList';
+import Settings from './components/Settings';
 
 function App() {
   const [activeTab, setActiveTab] = useState('producer');
@@ -64,6 +65,12 @@ function App() {
         >
           ⚙️ Admin
         </button>
+        <button
+          className={activeTab === 'settings' ? 'tab active' : 'tab'}
+          onClick={() => setActiveTab('settings')}
+        >
+          🔧 Settings
+        </button>
       </nav>
 
       <main className="content">
@@ -78,6 +85,9 @@ function App() {
         </div>
         <div style={{ display: activeTab === 'admin' ? 'block' : 'none' }}>
           <TopicInfo />
+        </div>
+        <div style={{ display: activeTab === 'settings' ? 'block' : 'none' }}>
+          <Settings />
         </div>
       </main>
 

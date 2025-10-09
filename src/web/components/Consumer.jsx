@@ -185,7 +185,7 @@ function Consumer() {
               <div key={index} className="message-item">
                 <div className="message-header">
                   <span className="message-time">
-                    {new Date(msg.timestamp).toLocaleString()}
+                    {msg.timestamp ? new Date(Number(msg.timestamp)).toLocaleString() : 'No timestamp'}
                   </span>
                   <span className="message-offset">Offset: {msg.offset}</span>
                   {msg.key && <span className="message-key">Key: {msg.key}</span>}
