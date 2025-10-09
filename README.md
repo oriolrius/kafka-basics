@@ -157,7 +157,7 @@ pnpm test:ui           # Interactive test UI
 pnpm test:report       # View last test report
 ```
 
-📚 **[Complete Testing Guide →](testing/README.md)**
+📚 **[Complete Testing Guide →](tests/README.md)**
 
 ## ⚙️ Configuration
 \`\`\`
