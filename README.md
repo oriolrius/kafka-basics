@@ -144,6 +144,22 @@ pnpm ktopic-delete     # Delete topic
 \`\`\`bash
 pnpm kstart            # Show help and structure
 pnpm kdiagnose         # Test Kafka connection
+```
+
+### Testing
+
+Run comprehensive Playwright E2E tests covering all features:
+
+```bash
+pnpm test:headless     # Run all tests (CI mode)
+pnpm test:headed       # Run with browser visible
+pnpm test:ui           # Interactive test UI
+pnpm test:report       # View last test report
+```
+
+📚 **[Complete Testing Guide →](testing/README.md)**
+
+## ⚙️ Configuration
 \`\`\`
 
 ### Testing
