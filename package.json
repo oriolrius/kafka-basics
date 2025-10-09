@@ -1,12 +1,19 @@
 {
-  "name": "kafka-simple-producer",
-  "version": "1.0.0",
-  "description": "Simple Kafka producer with KafkaJS and Avro Schema Registry",
-  "main": "producer.js",
+  "name": "kafka-basics",
+  "version": "2.0.0",
+  "description": "Complete Kafka toolkit with producers, consumers, and admin tools",
+  "main": "src/producers/producer.js",
   "scripts": {
-    "start": "node producer.js",
-    "start-avro": "node avro-producer.js",
-    "diagnose": "node diagnostic.js"
+    "kstart": "node src/utils/show-structure.js",
+    "kpub": "node src/producers/producer.js",
+    "kpub-avro": "node src/producers/avro-producer.js",
+    "ksub": "node src/consumers/consumer.js",
+    "ksub-avro": "node src/consumers/avro-consumer.js",
+    "ksub-universal": "node src/consumers/universal-consumer.js",
+    "kdiagnose": "node src/utils/diagnostic.js",
+    "klist": "node src/admin/list-messages.js",
+    "ktopic-info": "node src/admin/topic-info.js",
+    "ktopic-delete": "node src/admin/delete-topic.js"
   },
   "dependencies": {
     "kafkajs": "^2.2.4",
