@@ -21,9 +21,11 @@
     "api": "node src/api/server.js",
     "web": "concurrently \"pnpm api\" \"pnpm dev --host\"",
     "test": "playwright test",
+    "test:headless": "playwright test --reporter=html,list",
     "test:headed": "playwright test --headed",
     "test:debug": "playwright test --debug",
-    "test:ui": "playwright test --ui"
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report"
   },
   "dependencies": {
     "@kafkajs/confluent-schema-registry": "^3.3.0",
