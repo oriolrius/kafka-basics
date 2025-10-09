@@ -1,6 +1,53 @@
 # Kafka Basics - Web UI
 
-A modern React-based web interface for managing Kafka producers, consumers, and topics.
+> Modern React-based web interface for managing Kafka producers, consumers, and topics
+
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/oriolrius/kafka-basics)
+
+A complete web interface for Kafka operations with real-time message streaming, topic administration, and connection management.
+
+## ✨ Features
+
+### 📤 Producer
+- Send messages to Kafka topics
+- Support for JSON, Text, and Avro formats
+- Optional message keys
+- Real-time delivery confirmation
+
+### 📥 Consumer
+- Real-time message streaming
+- Universal auto-detection of formats
+- Support for JSON, Text, and Avro
+- Live streaming with auto-scroll
+- Message history (last 100 messages)
+- Persistent consumer across tab switches
+
+### 📋 Message List
+- View all messages in a topic
+- Browse message history
+- Display metadata (partition, offset, timestamp, key)
+- Pretty-printed JSON values
+
+### ⚙️ Topic Administration
+- View topic information and metadata
+- Inspect partition details (watermarks, leaders, replicas, ISR)
+- Delete topics (with confirmation)
+- View topic configuration
+
+### 🔧 Connection Settings
+- Configure broker addresses
+- Security protocols (PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL)
+- SASL mechanisms (PLAIN, SCRAM-SHA-256, SCRAM-SHA-512, AWS, OAUTHBEARER)
+- SSL/TLS configuration
+- Schema Registry settings
+- Save to localStorage or export to .env
+
+### 🎨 UI Features
+- **Light/Dark Theme** - Toggle with one click
+- **Responsive Design** - Works on desktop and mobile
+- **Real-time Updates** - Live message streaming
+- **Pretty Printing** - Formatted JSON display
+- **Error Handling** - Clear error messages and status indicators
 
 ## 🚀 Quick Start
 
