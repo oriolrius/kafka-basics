@@ -1,6 +1,6 @@
 {
   "name": "kafka-basics",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Complete Kafka toolkit with producers, consumers, and admin tools",
   "type": "module",
   "main": "src/producers/producer.js",
