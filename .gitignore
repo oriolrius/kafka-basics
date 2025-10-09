@@ -123,6 +123,12 @@ kafka-data/
 zookeeper-data/
 *.offset
 
+# Debug/test files (fitxers de debug que es creen accidentalment)
+APIVERSION_QUERY
+CONNECT
+SSL_HANDSHAKE
+TRY_CONNECT
+
 # Local configuration files
 config/local.json
 local-config.json
