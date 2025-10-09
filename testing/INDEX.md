@@ -4,6 +4,20 @@ Complete testing resources for the Kafka Basics Web UI project.
 
 ## 📚 Documentation Files
 
+### ⚡ [QUICK_REFERENCE.md](QUICK_REFERENCE.md)
+**Quick Reference Card**
+
+One-page cheat sheet for daily use:
+- Most common commands
+- Test file overview
+- Quick debugging steps
+- Common fixes
+- Development workflow
+
+**Start here** for quick lookups.
+
+---
+
 ### 🚀 [README.md](README.md)
 **Complete Testing Guide**
 
@@ -16,7 +30,7 @@ Your primary resource for running and debugging tests:
 - Common issues and solutions
 - Tips and best practices
 
-**Start here** if you're new to the testing setup.
+**Use this** for comprehensive testing information.
 
 ---
 
