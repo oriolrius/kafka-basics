@@ -25,7 +25,7 @@
     "test:headed": "playwright test --headed",
     "test:debug": "playwright test --debug",
     "test:ui": "playwright test --ui",
-    "test:report": "playwright show-report"
+    "test:report": "playwright show-report --host 0.0.0.0"
   },
   "dependencies": {
     "@kafkajs/confluent-schema-registry": "^3.3.0",

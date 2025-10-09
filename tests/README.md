@@ -9,7 +9,7 @@ docker-compose up -d
 # Run all tests
 pnpm test:headless
 
-# View report
+# View report (accessible remotely on port 9323)
 pnpm test:report
 ```
 
