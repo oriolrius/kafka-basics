@@ -6,6 +6,16 @@ yarn-error.log*
 package-lock.json
 yarn.lock
 
+# Build output
+dist/
+build/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+web-server.log
+
 # Runtime data
 pids
 *.pid

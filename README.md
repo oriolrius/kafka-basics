@@ -2,7 +2,17 @@
 
 Toolkit per treballar amb Kafka: productors, consumidors i administració.
 
-## Inici Ràpid
+## 🌐 Web UI
+
+**NEW!** Interfície web amb React per gestionar Kafka visualment:
+
+```bash
+pnpm web                  # Iniciar Web UI (http://localhost:3000)
+```
+
+Veure [WEB_UI_README.md](WEB_UI_README.md) per més detalls.
+
+## Inici Ràpid (CLI)
 
 ```bash
 pnpm install              # Instal·lar dependències
