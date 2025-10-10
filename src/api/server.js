@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { Kafka } from 'kafkajs';
 import dotenv from 'dotenv';
+import https from 'https';
 
 dotenv.config();
 
@@ -278,6 +279,431 @@ app.get('/api/messages/list', async (req, res) => {
   } catch (error) {
     console.error('Error listing messages:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Test connection with provided settings
+app.post('/api/test-connection', async (req, res) => {
+  const diagnostics = {
+    timestamp: new Date().toISOString(),
+    steps: [],
+    success: false,
+    error: null,
+  };
+
+  let testKafka = null;
+  let testProducer = null;
+  let testAdmin = null;
+
+  try {
+    const config = req.body;
+
+    diagnostics.steps.push({
+      step: 'Configuration received',
+      status: 'success',
+      details: {
+        brokers: config.brokers,
+        clientId: config.clientId,
+        securityProtocol: config.securityProtocol,
+        saslMechanism: config.saslMechanism || 'N/A',
+        useTls: config.useTls || false,
+        schemaRegistryUrl: config.schemaRegistryUrl || 'N/A',
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    // Build Kafka client configuration
+    const kafkaConfig = {
+      clientId: config.clientId || 'kafka-web-ui-test',
+      brokers: config.brokers.split(',').map(b => b.trim()),
+    };
+
+    // Add SSL configuration if needed
+    if (config.useTls || config.securityProtocol === 'SSL' || config.securityProtocol === 'SASL_SSL') {
+      kafkaConfig.ssl = {
+        rejectUnauthorized: config.rejectUnauthorized !== false,
+      };
+      diagnostics.steps.push({
+        step: 'SSL/TLS configuration',
+        status: 'success',
+        details: {
+          enabled: true,
+          rejectUnauthorized: kafkaConfig.ssl.rejectUnauthorized,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Add SASL configuration if needed
+    if (config.securityProtocol === 'SASL_PLAINTEXT' || config.securityProtocol === 'SASL_SSL') {
+      kafkaConfig.sasl = {
+        mechanism: config.saslMechanism || 'plain',
+        username: config.saslUsername || '',
+        password: config.saslPassword || '',
+      };
+      diagnostics.steps.push({
+        step: 'SASL authentication configuration',
+        status: 'success',
+        details: {
+          mechanism: kafkaConfig.sasl.mechanism,
+          username: kafkaConfig.sasl.username ? '***' : '(empty)',
+          password: kafkaConfig.sasl.password ? '***' : '(empty)',
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    diagnostics.steps.push({
+      step: 'Creating Kafka client',
+      status: 'success',
+      details: {
+        brokers: kafkaConfig.brokers,
+        clientId: kafkaConfig.clientId,
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    // Create test Kafka client
+    testKafka = new Kafka(kafkaConfig);
+    testProducer = testKafka.producer();
+    testAdmin = testKafka.admin();
+
+    // Test producer connection
+    const producerStartTime = Date.now();
+    await testProducer.connect();
+    const producerDuration = Date.now() - producerStartTime;
+
+    diagnostics.steps.push({
+      step: 'Producer connection',
+      status: 'success',
+      details: {
+        duration: `${producerDuration}ms`,
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    // Test admin connection
+    const adminStartTime = Date.now();
+    await testAdmin.connect();
+    const adminDuration = Date.now() - adminStartTime;
+
+    diagnostics.steps.push({
+      step: 'Admin client connection',
+      status: 'success',
+      details: {
+        duration: `${adminDuration}ms`,
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    // Fetch cluster metadata
+    const metadataStartTime = Date.now();
+    const cluster = await testAdmin.describeCluster();
+    const metadataDuration = Date.now() - metadataStartTime;
+
+    diagnostics.steps.push({
+      step: 'Cluster metadata retrieval',
+      status: 'success',
+      details: {
+        duration: `${metadataDuration}ms`,
+        brokersCount: cluster.brokers.length,
+        brokers: cluster.brokers.map(b => `${b.host}:${b.port} (id: ${b.nodeId})`),
+        controller: `Broker ${cluster.controller}`,
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    // List topics
+    const topicsStartTime = Date.now();
+    const topics = await testAdmin.listTopics();
+    const topicsDuration = Date.now() - topicsStartTime;
+
+    diagnostics.steps.push({
+      step: 'Topics listing',
+      status: 'success',
+      details: {
+        duration: `${topicsDuration}ms`,
+        topicsCount: topics.length,
+        topics: topics.slice(0, 10), // Show first 10 topics
+        hasMore: topics.length > 10,
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    // Test Schema Registry if configured
+    if (config.schemaRegistryUrl && config.schemaRegistryUrl.trim() !== '') {
+      try {
+        const registryStartTime = Date.now();
+        const registryUrl = config.schemaRegistryUrl.trim();
+
+        // Parse URL
+        const url = new URL(registryUrl);
+
+        // When schemaRegistryUseTls is false (unchecked), we want to ACCEPT self-signed certs
+        // So rejectUnauthorized should be false
+        const shouldRejectUnauthorized = config.schemaRegistryUseTls === true;
+
+        // Helper function to test Schema Registry endpoint
+        const testSchemaRegistryEndpoint = async (path) => {
+          const requestOptions = {
+            hostname: url.hostname,
+            port: url.port || (url.protocol === 'https:' ? 443 : 80),
+            path: url.pathname.replace(/\/$/, '') + path, // Remove trailing slash and add path
+            method: 'GET',
+            headers: {},
+          };
+
+          // Add basic auth if credentials provided
+          if (config.schemaRegistryUsername && config.schemaRegistryPassword) {
+            const auth = Buffer.from(
+              `${config.schemaRegistryUsername}:${config.schemaRegistryPassword}`
+            ).toString('base64');
+            requestOptions.headers['Authorization'] = `Basic ${auth}`;
+          }
+
+          // For HTTPS, set rejectUnauthorized
+          if (url.protocol === 'https:') {
+            requestOptions.rejectUnauthorized = shouldRejectUnauthorized;
+          }
+
+          return new Promise((resolve, reject) => {
+            const req = https.request(requestOptions, (res) => {
+              let data = '';
+              res.on('data', (chunk) => { data += chunk; });
+              res.on('end', () => {
+                resolve({
+                  statusCode: res.statusCode,
+                  statusMessage: res.statusMessage,
+                  headers: res.headers,
+                  body: data,
+                  path: path,
+                  fullUrl: `${url.protocol}//${url.hostname}:${url.port || (url.protocol === 'https:' ? 443 : 80)}${requestOptions.path}`
+                });
+              });
+            });
+            req.on('error', reject);
+            req.end();
+          });
+        };
+
+        // Try multiple endpoints to find the correct Schema Registry API
+        const endpointsToTry = [
+          '/',           // Root endpoint - often has basic info
+          '/subjects',   // Standard subjects endpoint
+          '/config',     // Config endpoint
+          '/schemas',    // Schemas endpoint (some registries)
+          '/v1/subjects', // Versioned API
+          '/api/v1/subjects', // Alternative versioned API
+        ];
+
+        let lastError = null;
+        let successfulResponse = null;
+
+        // Add HTTPS configuration logging
+        if (url.protocol === 'https:') {
+          diagnostics.steps.push({
+            step: 'Schema Registry HTTPS configuration',
+            status: 'success',
+            details: {
+              url: registryUrl,
+              schemaRegistryUseTlsCheckbox: config.schemaRegistryUseTls,
+              rejectUnauthorized: shouldRejectUnauthorized,
+              method: 'Using native Node.js https module',
+              note: shouldRejectUnauthorized
+                ? 'Certificate validation ENABLED - will REJECT self-signed certs'
+                : 'Certificate validation DISABLED (like curl -k) - will ACCEPT self-signed certs',
+            },
+            timestamp: new Date().toISOString(),
+          });
+        }
+
+        // Try each endpoint until we find one that works
+        for (const endpoint of endpointsToTry) {
+          try {
+            const response = await testSchemaRegistryEndpoint(endpoint);
+            
+            if (response.statusCode >= 200 && response.statusCode < 300) {
+              successfulResponse = response;
+              break;
+            } else if (response.statusCode === 404) {
+              // Continue trying other endpoints
+              lastError = response;
+              continue;
+            } else {
+              // Non-404 error, still record it but continue
+              lastError = response;
+              continue;
+            }
+          } catch (error) {
+            lastError = error;
+            continue;
+          }
+        }
+
+        const registryDuration = Date.now() - registryStartTime;
+
+        // Process the results
+        if (successfulResponse) {
+          let parsedData = null;
+          let dataType = 'unknown';
+          
+          try {
+            // Try to parse as JSON
+            parsedData = JSON.parse(successfulResponse.body);
+            
+            // Determine what kind of data we got
+            if (Array.isArray(parsedData)) {
+              dataType = 'subjects_list';
+            } else if (parsedData && typeof parsedData === 'object') {
+              if (parsedData.compatibilityLevel || parsedData.compatibility) {
+                dataType = 'config';
+              } else if (parsedData.version || parsedData.name) {
+                dataType = 'info';
+              } else {
+                dataType = 'object';
+              }
+            }
+          } catch (e) {
+            // Not JSON, treat as text
+            dataType = 'text';
+            parsedData = successfulResponse.body;
+          }
+
+          diagnostics.steps.push({
+            step: 'Schema Registry connection',
+            status: 'success',
+            details: {
+              duration: `${registryDuration}ms`,
+              url: successfulResponse.fullUrl,
+              workingEndpoint: successfulResponse.path,
+              statusCode: successfulResponse.statusCode,
+              dataType: dataType,
+              responseSize: successfulResponse.body.length,
+              sampleData: dataType === 'subjects_list' 
+                ? { subjectsCount: parsedData.length, subjects: parsedData.slice(0, 10) }
+                : dataType === 'text' 
+                  ? successfulResponse.body.substring(0, 200) + (successfulResponse.body.length > 200 ? '...' : '')
+                  : parsedData,
+            },
+            timestamp: new Date().toISOString(),
+          });
+        } else {
+          // All endpoints failed
+          const errorDetails = {
+            duration: `${registryDuration}ms`,
+            url: registryUrl,
+            testedEndpoints: endpointsToTry,
+            lastError: lastError?.statusCode ? {
+              statusCode: lastError.statusCode,
+              statusMessage: lastError.statusMessage,
+              body: lastError.body,
+              fullUrl: lastError.fullUrl
+            } : {
+              error: lastError?.message || 'Unknown connection error',
+              type: lastError?.name || 'Error'
+            }
+          };
+
+          diagnostics.steps.push({
+            step: 'Schema Registry connection',
+            status: 'warning',
+            details: errorDetails,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      } catch (schemaError) {
+        // Extract detailed error information
+        const errorDetails = {
+          url: config.schemaRegistryUrl,
+          error: schemaError.message,
+          errorType: schemaError.name,
+          errorCode: schemaError.code,
+        };
+
+        // Add cause information if available (this often has the real error)
+        if (schemaError.cause) {
+          errorDetails.cause = schemaError.cause.message || String(schemaError.cause);
+          errorDetails.causeCode = schemaError.cause.code;
+          errorDetails.causeType = schemaError.cause.name;
+
+          // For system errors, add syscall and errno
+          if (schemaError.cause.syscall) {
+            errorDetails.syscall = schemaError.cause.syscall;
+          }
+          if (schemaError.cause.errno) {
+            errorDetails.errno = schemaError.cause.errno;
+          }
+          if (schemaError.cause.address) {
+            errorDetails.address = schemaError.cause.address;
+          }
+          if (schemaError.cause.port) {
+            errorDetails.port = schemaError.cause.port;
+          }
+        }
+
+        // Add stack trace for debugging
+        errorDetails.stack = schemaError.stack;
+
+        diagnostics.steps.push({
+          step: 'Schema Registry connection',
+          status: 'warning',
+          details: errorDetails,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    }
+
+    diagnostics.success = true;
+    diagnostics.steps.push({
+      step: 'Connection test completed',
+      status: 'success',
+      details: {
+        message: 'All connectivity tests passed successfully',
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    res.json(diagnostics);
+  } catch (error) {
+    diagnostics.error = {
+      message: error.message,
+      code: error.code || 'UNKNOWN',
+      stack: error.stack,
+    };
+
+    diagnostics.steps.push({
+      step: 'Connection test failed',
+      status: 'error',
+      details: {
+        error: error.message,
+        code: error.code,
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    res.status(500).json(diagnostics);
+  } finally {
+    // Cleanup test connections
+    try {
+      if (testProducer) {
+        await testProducer.disconnect();
+        diagnostics.steps.push({
+          step: 'Cleanup: Producer disconnected',
+          status: 'success',
+          timestamp: new Date().toISOString(),
+        });
+      }
+      if (testAdmin) {
+        await testAdmin.disconnect();
+        diagnostics.steps.push({
+          step: 'Cleanup: Admin disconnected',
+          status: 'success',
+          timestamp: new Date().toISOString(),
+        });
+      }
+    } catch (cleanupError) {
+      console.error('Error during cleanup:', cleanupError);
+    }
   }
 });
 
