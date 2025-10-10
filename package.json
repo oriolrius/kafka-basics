@@ -59,6 +59,7 @@
   "license": "MIT",
   "main": "src/producers/producer.js",
   "name": "@oriolrius/kafka-basics",
+  "preferGlobal": true,
   "repository": {
     "type": "git",
     "url": "https://github.com/oriolrius/kafka-basics.git"

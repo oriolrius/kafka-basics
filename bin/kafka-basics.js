@@ -33,10 +33,19 @@ Commands:
   ktopic-info Get topic information
   help        Show this help
 
+🚀 Quick Start (no prompts):
+  npx --yes @oriolrius/kafka-basics web
+  npx --yes @oriolrius/kafka-basics kstart
+
+📦 Or install globally (recommended for frequent use):
+  npm install -g @oriolrius/kafka-basics
+  kafka-basics web
+
 Examples:
-  npx @oriolrius/kafka-basics web
-  npx @oriolrius/kafka-basics kstart
-  npx @oriolrius/kafka-basics kpub --topic my-topic --message "Hello"
+  npx --yes @oriolrius/kafka-basics web
+  npx --yes @oriolrius/kafka-basics kpub --topic my-topic --message "Hello"
+
+💡 Tip: Use 'npx --yes' to skip installation prompts
 
 For more options, run each command with --help
 `);
