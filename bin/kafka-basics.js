@@ -7,9 +7,10 @@ import { spawn } from 'child_process';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const srcDir = join(__dirname, '..', 'src');
+const binDir = join(__dirname, '..', 'node_modules', '.bin');
 
 const commands = {
-  'web': ['concurrently', '"node src/api/server.js"', '"vite --host"'],
+  'web': [join(binDir, 'concurrently'), '"node src/api/server.js"', `"${join(binDir, 'vite')} --host"`],
   'kstart': ['node', join(srcDir, 'utils', 'show-structure.js')],
   'kpub': ['node', join(srcDir, 'producers', 'producer.js')],
   'ksub': ['node', join(srcDir, 'consumers', 'consumer.js')],
