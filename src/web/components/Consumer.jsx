@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-function Consumer() {
-  const [topic, setTopic] = useState('test-topic');
+function Consumer({ topic, onTopicChange }) {
   const [format, setFormat] = useState('universal');
   const [messages, setMessages] = useState([]);
   const [isConsuming, setIsConsuming] = useState(false);
@@ -70,7 +69,7 @@ function Consumer() {
   }, [isConsuming, topic]);
 
   const startConsuming = async () => {
-    setStatus('🔄 Starting consumer...');
+    setStatus('<i class="fas fa-sync-alt fa-spin"></i> Starting consumer...');
     setMessages([]);
 
     try {
@@ -89,13 +88,13 @@ function Consumer() {
         const data = await response.json();
         console.log('✅ Consumer started:', data);
         setIsConsuming(true);
-        setStatus('✅ Consumer started. Listening for messages...');
+        setStatus('<i class="fas fa-check-circle"></i> Consumer started. Listening for messages...');
       } else {
         const data = await response.json();
-        setStatus(`❌ Error: ${data.error}`);
+        setStatus(`<i class="fas fa-times-circle"></i> Error: ${data.error}`);
       }
     } catch (error) {
-      setStatus(`❌ Error: ${error.message}`);
+      setStatus(`<i class="fas fa-times-circle"></i> Error: ${error.message}`);
     }
   };
 
@@ -110,15 +109,15 @@ function Consumer() {
         body: JSON.stringify({ topic }),
       });
       setIsConsuming(false);
-      setStatus('⏹️ Consumer stopped');
+      setStatus('<i class="fas fa-stop"></i> Consumer stopped');
     } catch (error) {
-      setStatus(`❌ Error stopping consumer: ${error.message}`);
+      setStatus(`<i class="fas fa-times-circle"></i> Error stopping consumer: ${error.message}`);
     }
   };
 
   return (
     <div className="consumer">
-      <h2>📥 Kafka Consumer</h2>
+      <h2><i className="fas fa-inbox"></i> Kafka Consumer</h2>
       <p>Consume messages from Kafka topics in real-time</p>
 
       <div className="form">
@@ -128,7 +127,7 @@ function Consumer() {
             id="consumer-topic"
             type="text"
             value={topic}
-            onChange={(e) => setTopic(e.target.value)}
+            onChange={(e) => onTopicChange(e.target.value)}
             placeholder="test-topic"
             disabled={isConsuming}
           />
@@ -152,11 +151,11 @@ function Consumer() {
         <div className="button-group">
           {!isConsuming ? (
             <button onClick={startConsuming} className="btn-primary">
-              ▶️ Start Consumer
+              <i className="fas fa-play"></i> Start Consumer
             </button>
           ) : (
             <button onClick={stopConsuming} className="btn-danger">
-              ⏹️ Stop Consumer
+              <i className="fas fa-stop"></i> Stop Consumer
             </button>
           )}
           <button
@@ -164,14 +163,14 @@ function Consumer() {
             className="btn-secondary"
             disabled={messages.length === 0}
           >
-            🗑️ Clear Messages
+            <i className="fas fa-trash"></i> Clear Messages
           </button>
         </div>
       </div>
 
       {status && (
-        <div className={status.startsWith('✅') ? 'status success' : 'status info'}>
-          {status}
+        <div className={status.includes('fa-check-circle') ? 'status success' : 'status info'}>
+          <span dangerouslySetInnerHTML={{ __html: status }}></span>
         </div>
       )}
 

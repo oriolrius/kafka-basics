@@ -28,6 +28,7 @@
     "test:report": "playwright show-report --host 0.0.0.0"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.1.0",
     "@kafkajs/confluent-schema-registry": "^3.3.0",
     "avsc": "^5.7.7",
     "cors": "^2.8.5",

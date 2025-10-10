@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 
-function TopicInfo() {
-  const [topic, setTopic] = useState('test-topic');
+function TopicInfo({ topic, onTopicChange }) {
   const [topicData, setTopicData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('');
@@ -17,12 +16,12 @@ function TopicInfo() {
 
       if (response.ok) {
         setTopicData(data);
-        setStatus('✅ Topic information loaded');
+        setStatus('<i class="fas fa-check-circle"></i> Topic information loaded');
       } else {
-        setStatus(`❌ Error: ${data.error}`);
+        setStatus(`<i class="fas fa-times-circle"></i> Error: ${data.error}`);
       }
     } catch (error) {
-      setStatus(`❌ Error: ${error.message}`);
+      setStatus(`<i class="fas fa-times-circle"></i> Error: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -48,13 +47,13 @@ function TopicInfo() {
       const data = await response.json();
 
       if (response.ok) {
-        setStatus(`✅ Topic "${topic}" deleted successfully`);
+        setStatus(`<i class="fas fa-check-circle"></i> Topic "${topic}" deleted successfully`);
         setTopicData(null);
       } else {
-        setStatus(`❌ Error: ${data.error}`);
+        setStatus(`<i class="fas fa-times-circle"></i> Error: ${data.error}`);
       }
     } catch (error) {
-      setStatus(`❌ Error: ${error.message}`);
+      setStatus(`<i class="fas fa-times-circle"></i> Error: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -62,7 +61,7 @@ function TopicInfo() {
 
   return (
     <div className="topic-info">
-      <h2>⚙️ Topic Administration</h2>
+      <h2><i className="fas fa-info-circle"></i> Topic Information</h2>
       <p>View and manage Kafka topics</p>
 
       <div className="form">
@@ -72,7 +71,7 @@ function TopicInfo() {
             id="admin-topic"
             type="text"
             value={topic}
-            onChange={(e) => setTopic(e.target.value)}
+            onChange={(e) => onTopicChange(e.target.value)}
             placeholder="test-topic"
           />
         </div>
@@ -83,21 +82,21 @@ function TopicInfo() {
             className="btn-primary"
             disabled={loading}
           >
-            {loading ? 'Loading...' : '📊 Get Topic Info'}
+            {loading ? <><i className="fas fa-spinner fa-spin"></i> Loading...</> : <><i className="fas fa-chart-bar"></i> Get Topic Info</>}
           </button>
           <button
             onClick={deleteTopic}
             className="btn-danger"
             disabled={loading}
           >
-            🗑️ Delete Topic
+            <i className="fas fa-trash"></i> Delete Topic
           </button>
         </div>
       </div>
 
       {status && (
-        <div className={status.startsWith('✅') ? 'status success' : 'status error'}>
-          {status}
+        <div className={status.includes('fa-check-circle') ? 'status success' : 'status error'}>
+          <span dangerouslySetInnerHTML={{ __html: status }}></span>
         </div>
       )}
 
