@@ -13,16 +13,16 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.1.0",
     "@kafkajs/confluent-schema-registry": "^3.3.0",
+    "@vitejs/plugin-react": "^5.0.4",
     "avsc": "^5.7.7",
+    "concurrently": "^9.2.1",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^5.1.0",
     "kafkajs": "^2.2.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "vite": "^7.1.9",
-    "concurrently": "^9.2.1",
-    "@vitejs/plugin-react": "^5.0.4"
+    "vite": "^7.1.9"
   },
   "description": "Complete Kafka toolkit with producers, consumers, and admin tools",
   "devDependencies": {
@@ -91,5 +91,5 @@
     "web": "concurrently \"pnpm api\" \"pnpm dev --host\""
   },
   "type": "module",
-  "version": "2.2.1"
+  "version": "2.2.2"
 }
