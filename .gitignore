@@ -151,4 +151,4 @@ coverage/
 # Build artifacts
 build/
 dist/
-out/
+out/contrib/
