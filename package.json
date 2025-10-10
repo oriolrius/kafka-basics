@@ -1,32 +1,4 @@
 {
-  "name": "kafka-basics",
-  "version": "2.1.0",
-  "description": "Complete Kafka toolkit with producers, consumers, and admin tools",
-  "type": "module",
-  "main": "src/producers/producer.js",
-  "scripts": {
-    "kstart": "node src/utils/show-structure.js",
-    "kpub": "node src/producers/producer.js",
-    "kpub-avro": "node src/producers/avro-producer.js",
-    "ksub": "node src/consumers/consumer.js",
-    "ksub-avro": "node src/consumers/avro-consumer.js",
-    "ksub-universal": "node src/consumers/universal-consumer.js",
-    "kdiagnose": "node src/utils/diagnostic.js",
-    "klist": "node src/admin/list-messages.js",
-    "ktopic-info": "node src/admin/topic-info.js",
-    "ktopic-delete": "node src/admin/delete-topic.js",
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "api": "node src/api/server.js",
-    "web": "concurrently \"pnpm api\" \"pnpm dev --host\"",
-    "test": "playwright test",
-    "test:headless": "playwright test --reporter=html,list",
-    "test:headed": "playwright test --headed",
-    "test:debug": "playwright test --debug",
-    "test:ui": "playwright test --ui",
-    "test:report": "playwright show-report --host 0.0.0.0"
-  },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.1.0",
     "@kafkajs/confluent-schema-registry": "^3.3.0",
@@ -38,11 +10,39 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
+  "description": "Complete Kafka toolkit with producers, consumers, and admin tools",
   "devDependencies": {
     "@playwright/test": "^1.56.0",
     "@vitejs/plugin-react": "^5.0.4",
     "concurrently": "^9.2.1",
     "playwright": "^1.56.0",
     "vite": "^7.1.9"
-  }
+  },
+  "main": "src/producers/producer.js",
+  "name": "kafka-basics",
+  "scripts": {
+    "api": "node src/api/server.js",
+    "build": "vite build",
+    "dev": "vite",
+    "kdiagnose": "node src/utils/diagnostic.js",
+    "klist": "node src/admin/list-messages.js",
+    "kpub": "node src/producers/producer.js",
+    "kpub-avro": "node src/producers/avro-producer.js",
+    "kstart": "node src/utils/show-structure.js",
+    "ksub": "node src/consumers/consumer.js",
+    "ksub-avro": "node src/consumers/avro-consumer.js",
+    "ksub-universal": "node src/consumers/universal-consumer.js",
+    "ktopic-delete": "node src/admin/delete-topic.js",
+    "ktopic-info": "node src/admin/topic-info.js",
+    "preview": "vite preview",
+    "test": "playwright test",
+    "test:debug": "playwright test --debug",
+    "test:headed": "playwright test --headed",
+    "test:headless": "playwright test --reporter=html,list",
+    "test:report": "playwright show-report --host 0.0.0.0",
+    "test:ui": "playwright test --ui",
+    "web": "concurrently \"pnpm api\" \"pnpm dev --host\""
+  },
+  "type": "module",
+  "version": "2.1.1"
 }
