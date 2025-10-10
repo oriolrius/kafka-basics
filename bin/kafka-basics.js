@@ -44,10 +44,19 @@ For more options, run each command with --help
 }
 
 const [cmd, ...args] = commands[command];
+
+// Store the user's original working directory for .env loading
+const userCwd = process.cwd();
+const packageDir = join(__dirname, '..');
+
 const child = spawn(cmd, args, { 
   stdio: 'inherit',
   shell: true,
-  cwd: join(__dirname, '..')
+  cwd: packageDir,
+  env: {
+    ...process.env,
+    USER_CWD: userCwd  // Pass user's working directory as env var
+  }
 });
 
 child.on('error', (err) => {

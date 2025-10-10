@@ -1,4 +1,8 @@
-require('dotenv').config();
+const path = require('path');
+
+// Load .env from user's working directory when using npx
+const envPath = process.env.USER_CWD ? path.join(process.env.USER_CWD, '.env') : '.env';
+require('dotenv').config({ path: envPath });
 
 // Silence the partitioner warning
 process.env.KAFKAJS_NO_PARTITIONER_WARNING = '1';

@@ -3,8 +3,11 @@ import cors from 'cors';
 import { Kafka } from 'kafkajs';
 import dotenv from 'dotenv';
 import https from 'https';
+import { join } from 'path';
 
-dotenv.config();
+// Load .env from user's working directory when using npx
+const envPath = process.env.USER_CWD ? join(process.env.USER_CWD, '.env') : '.env';
+dotenv.config({ path: envPath });
 
 const app = express();
 const PORT = process.env.API_PORT || 3001;
