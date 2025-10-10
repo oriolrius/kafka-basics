@@ -127,7 +127,7 @@ jobs:
       - name: 🔍 Verify package contents
         run: |
           echo "📦 Package contents:"
-          pnpm pack --dry-run
+          npm pack --dry-run
 
       - name: 🚀 Publish to npm
         run: pnpm publish --access public --no-git-checks
