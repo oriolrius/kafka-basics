@@ -38,9 +38,9 @@ Make sure your repository allows:
 2. Select **Release** workflow
 3. Click **Run workflow**
 4. Choose version bump type:
-   - `patch` for bug fixes (2.1.2 → 2.1.3)
-   - `minor` for features (2.1.2 → 2.2.0)
-   - `major` for breaking changes (2.1.2 → 3.0.0)
+   - `patch` for bug fixes (2.2.0 → 2.2.1)
+   - `minor` for features (2.2.0 → 2.3.0)
+   - `major` for breaking changes (2.2.0 → 3.0.0)
 5. Click **Run workflow**
 
 This will:
@@ -63,7 +63,7 @@ git push origin main --tags
 ### Option 3: Create GitHub Release
 
 1. Go to **Releases** → **Create a new release**
-2. Choose/create a tag (format: `v2.1.3`)
+2. Choose/create a tag (format: `v2.2.1`)
 3. Add release notes
 4. Click **Publish release**
 
