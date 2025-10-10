@@ -4,6 +4,7 @@ import Consumer from './components/Consumer';
 import TopicInfo from './components/TopicInfo';
 import MessageList from './components/MessageList';
 import Settings from './components/Settings';
+import packageJson from '../../package.json';
 
 function App() {
   const [activeTab, setActiveTab] = useState('producer');
@@ -107,7 +108,7 @@ function App() {
       </main>
 
       <footer className="footer">
-        <p>Kafka Basics v2.0.0 - Built with React</p>
+        <p>Kafka Basics v{packageJson.version} - Built with React</p>
       </footer>
     </div>
   );
