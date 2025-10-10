@@ -27,6 +27,8 @@ function Settings() {
 
   const [status, setStatus] = useState('');
   const [saved, setSaved] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResults, setTestResults] = useState(null);
 
   // Load saved configuration on mount
   useEffect(() => {
@@ -119,6 +121,52 @@ SCHEMA_REGISTRY_PASSWORD=${config.schemaRegistryPassword}
     URL.revokeObjectURL(url);
     
     setStatus('✅ Configuration exported to .env file');
+  };
+
+  const handleTestConnection = async () => {
+    setTesting(true);
+    setTestResults(null);
+    setStatus('');
+
+    try {
+      const response = await fetch('/api/test-connection', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(config),
+      });
+
+      const results = await response.json();
+      setTestResults(results);
+
+      if (results.success) {
+        setStatus('✅ Connection test passed! All systems are operational.');
+      } else {
+        setStatus('❌ Connection test failed. See details below.');
+      }
+    } catch (error) {
+      setTestResults({
+        success: false,
+        error: {
+          message: error.message,
+          code: 'NETWORK_ERROR',
+        },
+        steps: [
+          {
+            step: 'API request',
+            status: 'error',
+            details: {
+              error: error.message,
+            },
+            timestamp: new Date().toISOString(),
+          },
+        ],
+      });
+      setStatus('❌ Failed to connect to API server. Make sure it is running.');
+    } finally {
+      setTesting(false);
+    }
   };
 
   const needsSasl = config.securityProtocol === 'SASL_PLAINTEXT' || config.securityProtocol === 'SASL_SSL';
@@ -284,7 +332,8 @@ SCHEMA_REGISTRY_PASSWORD=${config.schemaRegistryPassword}
                 checked={config.schemaRegistryUseTls}
                 onChange={(e) => handleChange('schemaRegistryUseTls', e.target.checked)}
               />
-              <span>Use TLS for Schema Registry</span>
+              <span>Validate SSL certificates (strict mode)</span>
+              <span className="field-hint">Uncheck to accept self-signed certificates</span>
             </label>
           </div>
 
@@ -318,6 +367,9 @@ SCHEMA_REGISTRY_PASSWORD=${config.schemaRegistryPassword}
 
       {/* Action Buttons */}
       <div className="settings-actions">
+        <button onClick={handleTestConnection} className="btn-test" disabled={testing}>
+          {testing ? '⏳ Testing...' : '🔍 Test Connection'}
+        </button>
         <button onClick={handleSave} className="btn-primary" disabled={saved}>
           {saved ? '✓ Saved' : '💾 Save Configuration'}
         </button>
@@ -331,11 +383,76 @@ SCHEMA_REGISTRY_PASSWORD=${config.schemaRegistryPassword}
 
       {status && (
         <div className={
-          status.startsWith('✅') ? 'status success' : 
-          status.startsWith('❌') ? 'status error' : 
+          status.startsWith('✅') ? 'status success' :
+          status.startsWith('❌') ? 'status error' :
           'status info'
         }>
           {status}
+        </div>
+      )}
+
+      {/* Connection Test Results */}
+      {testResults && (
+        <div className="test-results">
+          <h3>Connection Test Results</h3>
+          <div className="test-summary">
+            <div className={`test-status ${testResults.success ? 'success' : 'failed'}`}>
+              {testResults.success ? '✅ Success' : '❌ Failed'}
+            </div>
+            <div className="test-timestamp">
+              Tested at: {new Date(testResults.timestamp).toLocaleString()}
+            </div>
+          </div>
+
+          {testResults.error && (
+            <div className="test-error">
+              <h4>Error Details</h4>
+              <div className="error-details">
+                <div><strong>Message:</strong> {testResults.error.message}</div>
+                <div><strong>Code:</strong> {testResults.error.code}</div>
+                {testResults.error.stack && (
+                  <details>
+                    <summary>Stack Trace</summary>
+                    <pre>{testResults.error.stack}</pre>
+                  </details>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="test-steps">
+            <h4>Test Execution Steps</h4>
+            {testResults.steps.map((step, index) => (
+              <div key={index} className={`test-step ${step.status}`}>
+                <div className="step-header">
+                  <span className="step-number">{index + 1}</span>
+                  <span className="step-name">{step.step}</span>
+                  <span className={`step-status status-${step.status}`}>
+                    {step.status === 'success' && '✅'}
+                    {step.status === 'error' && '❌'}
+                    {step.status === 'warning' && '⚠️'}
+                  </span>
+                </div>
+                {step.details && (
+                  <div className="step-details">
+                    {Object.entries(step.details).map(([key, value]) => (
+                      <div key={key} className="detail-item">
+                        <strong>{key}:</strong>{' '}
+                        {typeof value === 'object' ? (
+                          <pre>{JSON.stringify(value, null, 2)}</pre>
+                        ) : (
+                          <span>{String(value)}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="step-timestamp">
+                  {new Date(step.timestamp).toLocaleTimeString()}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -345,7 +462,7 @@ SCHEMA_REGISTRY_PASSWORD=${config.schemaRegistryPassword}
           <li><strong>Client-side only:</strong> These settings are saved in your browser's localStorage</li>
           <li><strong>Server restart required:</strong> To apply these settings to the API server, export to .env and restart</li>
           <li><strong>Security:</strong> Passwords are stored in browser storage - use environment variables for production</li>
-          <li><strong>Testing:</strong> Use "Test Connection" in the Admin tab to verify settings</li>
+          <li><strong>Testing:</strong> Use "Test Connection" button above to verify settings before saving</li>
         </ul>
       </div>
     </div>
