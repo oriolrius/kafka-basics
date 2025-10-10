@@ -21,7 +21,7 @@ A modern, full-featured Kafka development toolkit with both **React Web UI** and
 
 ### Web UI (Recommended)
 
-\`\`\`bash
+```bash
 # Install dependencies
 pnpm install
 
@@ -30,15 +30,13 @@ docker compose up -d
 
 # Launch Web UI + API
 pnpm web
-\`\`\`
+```
 
 Access at: <http://localhost:3000>
 
-📖 See [WEB_UI_README.md](WEB_UI_README.md) for detailed web UI documentation.
+## CLI Tools
 
-### CLI Tools
-
-\`\`\`bash
+```bash
 # Install dependencies
 pnpm install
 
@@ -49,14 +47,12 @@ cp .env.example .env
 pnpm kstart            # Show help
 pnpm kpub              # Send message
 pnpm ksub              # Consume messages
-\`\`\`
+```
 
-## 📚 Documentation
+## Documentation
 
 | Document | Description |
 |----------|-------------|
-| [WEB_UI_README.md](WEB_UI_README.md) | Complete Web UI documentation |
-| [QUICKSTART.md](QUICKSTART.md) | Step-by-step getting started guide |
 | [TESTING.md](TESTING.md) | Playwright testing guide |
 | [README.md](README.md) | This file - overview and CLI reference |
 
@@ -73,17 +69,17 @@ Modern React-based interface with:
 
 ### Web UI Scripts
 
-\`\`\`bash
+```bash
 pnpm web               # Start both API and frontend
 pnpm api               # Start API server only
 pnpm dev               # Start frontend only
 pnpm build             # Build for production
 pnpm preview           # Preview production build
-\`\`\`
+```
 
 ## 📁 Project Structure
 
-\`\`\`text
+```text
 kafka-basics/
 ├── src/
 │   ├── web/              # React Web UI
@@ -112,36 +108,36 @@ kafka-basics/
 ├── index.html            # Web UI entry
 ├── vite.config.js        # Vite configuration
 └── package.json          # Dependencies and scripts
-\`\`\`
+```
 
 ## 🔧 CLI Usage
 
 ### Producers
 
-\`\`\`bash
+```bash
 pnpm kpub              # Send JSON/Text messages
 pnpm kpub-avro         # Send Avro messages
-\`\`\`
+```
 
 ### Consumers
 
-\`\`\`bash
+```bash
 pnpm ksub              # Consume JSON/Text messages
 pnpm ksub-avro         # Consume Avro messages
 pnpm ksub-universal    # Auto-detect message format
-\`\`\`
+```
 
 ### Admin Tools
 
-\`\`\`bash
+```bash
 pnpm klist             # List all messages in topic
 pnpm ktopic-info       # Show topic information
 pnpm ktopic-delete     # Delete topic
-\`\`\`
+```
 
 ### Utilities
 
-\`\`\`bash
+```bash
 pnpm kstart            # Show help and structure
 pnpm kdiagnose         # Test Kafka connection
 ```
@@ -160,16 +156,16 @@ pnpm test:report       # View last test report
 📚 **[Complete Testing Guide →](tests/README.md)**
 
 ## ⚙️ Configuration
-\`\`\`
+```
 
 ### Testing
 
-\`\`\`bash
+```bash
 pnpm test              # Run Playwright tests
 pnpm test:headed       # Run tests with browser visible
 pnpm test:debug        # Debug tests step-by-step
 pnpm test:ui           # Interactive test UI
-\`\`\`
+```
 
 ## ⚙️ Configuration
 
@@ -177,7 +173,7 @@ pnpm test:ui           # Interactive test UI
 
 Create a \`.env\` file (see \`.env.example\`):
 
-\`\`\`env
+```env
 # Kafka Broker
 KAFKA_BROKERS=localhost:9092
 KAFKA_CLIENT_ID=kafka-web-ui
@@ -203,7 +199,7 @@ SCHEMA_REGISTRY_PASSWORD=
 
 # API Server
 API_PORT=3001
-\`\`\`
+```
 
 ### Web UI Settings
 
@@ -219,9 +215,9 @@ Configure connection settings directly in the **🔧 Settings** tab:
 
 Start Kafka broker locally:
 
-\`\`\`bash
+```bash
 docker compose up -d
-\`\`\`
+```
 
 This creates:
 
@@ -232,21 +228,21 @@ This creates:
 
 Stop Kafka:
 
-\`\`\`bash
+```bash
 docker compose down
-\`\`\`
+```
 
 ## 🧪 Testing
 
 Comprehensive Playwright test suite:
 
-\`\`\`bash
+```bash
 # Start web server
 pnpm web
 
 # Run tests (in another terminal)
 pnpm test
-\`\`\`
+```
 
 See [TESTING.md](TESTING.md) for details.
 
@@ -288,7 +284,7 @@ See [TESTING.md](TESTING.md) for details.
 
 ### CLI Workflow
 
-\`\`\`bash
+```bash
 # View topic information
 pnpm ktopic-info
 
@@ -300,7 +296,7 @@ KAFKA_TOPIC=my-topic pnpm ksub
 
 # List all messages
 KAFKA_TOPIC=my-topic pnpm klist
-\`\`\`
+```
 
 ## 🤝 Contributing
 
