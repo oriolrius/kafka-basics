@@ -13,7 +13,7 @@ pnpm test:headless
 pnpm test:report
 ```
 
-## Test Files (38 tests)
+## Test Files (39 tests)
 
 | File | Tests | What it covers |
 |------|-------|----------------|
@@ -23,6 +23,7 @@ pnpm test:report
 | `settings.spec.js` | 10 | Connection config, security protocols, SASL |
 | `admin.spec.js` | 6 | Topic info, message listing, deletion |
 | `messages.spec.js` | 5 | Message browsing, metadata, timestamps |
+| `screenshots.spec.js` | 9 | Screenshots for documentation (includes Overview) |
 
 ## Running Tests
 
@@ -116,4 +117,21 @@ test.describe('Feature Tests', () => {
 
 - `test-results/` - Traces, screenshots, videos (on failure)
 - `playwright-report/` - HTML report with all test results
+- `../assets/` - Screenshots for documentation (README.md)
 
+## Capturing Screenshots for Documentation
+
+To update the screenshots shown in the README.md:
+
+```bash
+# Make sure the web server is running
+pnpm web
+
+# In another terminal, run the screenshot script
+pnpm capture-screenshots
+
+# Or run the Playwright test (requires manual server start)
+pnpm test:screenshots
+```
+
+The screenshots will be saved to the `assets/` folder and are automatically displayed in the main README.md file under the "Web UI Features" section.

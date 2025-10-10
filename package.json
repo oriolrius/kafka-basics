@@ -38,6 +38,7 @@
     "bin/",
     "schemas/",
     "examples/",
+    "assets/",
     "docker-compose.yml",
     "vite.config.js",
     "README.md",
@@ -67,6 +68,7 @@
   "scripts": {
     "api": "node src/api/server.js",
     "build": "vite build",
+    "capture-screenshots": "node bin/capture-screenshots.js",
     "dev": "vite",
     "kdiagnose": "node src/utils/diagnostic.js",
     "klist": "node src/admin/list-messages.js",
@@ -88,6 +90,7 @@
     "test:headed": "playwright test --headed",
     "test:headless": "playwright test --reporter=html,list",
     "test:report": "playwright show-report --host 0.0.0.0",
+    "test:screenshots": "playwright test tests/screenshots.spec.js --config playwright.screenshots.config.js",
     "test:ui": "playwright test --ui",
     "web": "concurrently \"pnpm api\" \"pnpm dev --host\""
   },

@@ -199,13 +199,82 @@ Access the interface at: **<http://localhost:3000>**
 
 ### Web UI Features
 
-The web interface includes five main tabs:
+The web interface includes six main tabs:
 
+- **🏠 Overview** - Welcome page with feature explanations and quick start guide
 - **📤 Producer** - Send messages to topics with JSON, Text, or Avro format
 - **📥 Consumer** - Real-time message streaming with auto-scroll
 - **📋 Messages** - Browse all messages in a topic with pagination
 - **⚙️ Admin** - Topic information, management, and inspection
 - **🔧 Settings** - Configure Kafka connections, security, and schema registry
+
+#### Screenshots
+
+Click on any screenshot to view full size:
+
+<table>
+  <tr>
+    <td width="33%" align="center">
+      <strong>📤 Producer Tab</strong><br/>
+      <a href="assets/producer-tab.png">
+        <img src="assets/producer-tab.png" alt="Producer Tab" width="300" />
+      </a>
+    </td>
+    <td width="33%" align="center">
+      <strong>📥 Consumer Tab</strong><br/>
+      <a href="assets/consumer-tab.png">
+        <img src="assets/consumer-tab.png" alt="Consumer Tab" width="300" />
+      </a>
+    </td>
+    <td width="33%" align="center">
+      <strong>📋 Messages Tab</strong><br/>
+      <a href="assets/messages-tab.png">
+        <img src="assets/messages-tab.png" alt="Messages Tab" width="300" />
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td width="33%" align="center">
+      <strong>⚙️ Admin Tab</strong><br/>
+      <a href="assets/admin-tab.png">
+        <img src="assets/admin-tab.png" alt="Admin Tab" width="300" />
+      </a>
+    </td>
+    <td width="33%" align="center">
+      <strong>🔧 Settings Tab</strong><br/>
+      <a href="assets/settings-tab.png">
+        <img src="assets/settings-tab.png" alt="Settings Tab" width="300" />
+      </a>
+    </td>
+    <td width="33%" align="center">
+      <strong>📱 Overview</strong><br/>
+      <a href="assets/overview.png">
+        <img src="assets/overview.png" alt="Overview" width="300" />
+      </a>
+    </td>
+  </tr>
+</table>
+
+**Theme Support**
+
+The application supports both light and dark themes. Click to view full size:
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <strong>🌙 Dark Theme</strong><br/>
+      <a href="assets/dark-theme.png">
+        <img src="assets/dark-theme.png" alt="Dark Theme" width="400" />
+      </a>
+    </td>
+    <td width="50%" align="center">
+      <strong>☀️ Light Theme</strong><br/>
+      <a href="assets/light-theme.png">
+        <img src="assets/light-theme.png" alt="Light Theme" width="400" />
+      </a>
+    </td>
+  </tr>
+</table>
 
 ### Web UI Controls
 

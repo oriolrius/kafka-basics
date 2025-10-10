@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Overview from './components/Overview';
 import Producer from './components/Producer';
 import Consumer from './components/Consumer';
 import TopicInfo from './components/TopicInfo';
@@ -7,7 +8,7 @@ import Settings from './components/Settings';
 import packageJson from '../../package.json';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('producer');
+  const [activeTab, setActiveTab] = useState('overview');
   const [theme, setTheme] = useState(() => {
     // Get saved theme or default to dark
     return localStorage.getItem('kafka-theme') || 'dark';
@@ -58,6 +59,12 @@ function App() {
 
       <nav className="tabs">
         <button
+          className={activeTab === 'overview' ? 'tab active' : 'tab'}
+          onClick={() => setActiveTab('overview')}
+        >
+          <i className="fas fa-home"></i> Overview
+        </button>
+        <button
           className={activeTab === 'producer' ? 'tab active' : 'tab'}
           onClick={() => setActiveTab('producer')}
         >
@@ -90,6 +97,9 @@ function App() {
       </nav>
 
       <main className="content">
+        <div style={{ display: activeTab === 'overview' ? 'block' : 'none' }}>
+          <Overview />
+        </div>
         <div style={{ display: activeTab === 'producer' ? 'block' : 'none' }}>
           <Producer topic={sharedTopic} onTopicChange={handleTopicChange} />
         </div>
