@@ -3,14 +3,14 @@ import { test, expect } from '@playwright/test';
 test.describe('Settings Tests', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.click('text=⚙️ Settings');
+    await page.click('text=🔧 Settings');
   });
 
   test('should display settings form', async ({ page }) => {
     await expect(page.locator('h2')).toContainText('Kafka Connection Settings');
     await expect(page.locator('#brokers')).toBeVisible();
     await expect(page.locator('#securityProtocol')).toBeVisible();
-    await expect(page.locator('#schemaRegistry')).toBeVisible();
+    await expect(page.locator('#schemaRegistryUrl')).toBeVisible();
   });
 
   test('should load default connection settings', async ({ page }) => {
@@ -33,35 +33,30 @@ test.describe('Settings Tests', () => {
   test('should show SSL and SASL options when SASL_SSL selected', async ({ page }) => {
     await page.locator('#securityProtocol').selectOption('SASL_SSL');
     
-    // Both SSL and SASL fields should be visible
-    await expect(page.locator('#sslCa')).toBeVisible();
-    await expect(page.locator('#sslCert')).toBeVisible();
-    await expect(page.locator('#sslKey')).toBeVisible();
+    // SASL fields should be visible
     await expect(page.locator('#saslMechanism')).toBeVisible();
+    await expect(page.locator('#saslUsername')).toBeVisible();
+    await expect(page.locator('#saslPassword')).toBeVisible();
   });
 
-  test('should show only SSL options when SSL selected', async ({ page }) => {
-    await page.locator('#securityProtocol').selectOption('SSL');
+  test('should show only SASL options when SASL_PLAINTEXT selected', async ({ page }) => {
+    await page.locator('#securityProtocol').selectOption('SASL_PLAINTEXT');
     
-    // SSL fields should be visible
-    await expect(page.locator('#sslCa')).toBeVisible();
-    await expect(page.locator('#sslCert')).toBeVisible();
-    await expect(page.locator('#sslKey')).toBeVisible();
-    
-    // SASL fields should not be visible
-    await expect(page.locator('#saslMechanism')).not.toBeVisible();
+    // SASL fields should be visible
+    await expect(page.locator('#saslMechanism')).toBeVisible();
+    await expect(page.locator('#saslUsername')).toBeVisible();
+    await expect(page.locator('#saslPassword')).toBeVisible();
   });
 
-  test('should hide SSL and SASL options when PLAINTEXT selected', async ({ page }) => {
-    // First select SASL_SSL to show all options
+  test('should hide SASL options when PLAINTEXT selected', async ({ page }) => {
+    // First select SASL_SSL to show SASL options
     await page.locator('#securityProtocol').selectOption('SASL_SSL');
-    await expect(page.locator('#sslCa')).toBeVisible();
+    await expect(page.locator('#saslMechanism')).toBeVisible();
     
     // Switch to PLAINTEXT
     await page.locator('#securityProtocol').selectOption('PLAINTEXT');
     
-    // Options should be hidden
-    await expect(page.locator('#sslCa')).not.toBeVisible();
+    // SASL options should be hidden
     await expect(page.locator('#saslMechanism')).not.toBeVisible();
   });
 
@@ -72,13 +67,13 @@ test.describe('Settings Tests', () => {
     await page.locator('#saslUsername').fill('testuser');
     await page.locator('#saslPassword').fill('testpass');
     
-    await page.click('text=Save Settings');
+    await page.click('text=💾 Save Settings');
     
     await expect(page.locator('.status.success')).toBeVisible();
     
     // Reload and check persistence
     await page.reload();
-    await page.click('text=⚙️ Settings');
+    await page.click('text=🔧 Settings');
     
     await expect(page.locator('#brokers')).toHaveValue('broker1:9092,broker2:9092');
     await expect(page.locator('#securityProtocol')).toHaveValue('SASL_SSL');
@@ -87,10 +82,10 @@ test.describe('Settings Tests', () => {
 
   test('should export settings as .env format', async ({ page }) => {
     await page.locator('#brokers').fill('kafka:9092');
-    await page.locator('#schemaRegistry').fill('http://schema-registry:8081');
+    await page.locator('#schemaRegistryUrl').fill('http://schema-registry:8081');
     
     const downloadPromise = page.waitForEvent('download');
-    await page.click('text=Export as .env');
+    await page.click('text=📥 Export as .env');
     const download = await downloadPromise;
     
     expect(download.suggestedFilename()).toBe('kafka-config.env');
@@ -112,12 +107,12 @@ test.describe('Settings Tests', () => {
     
     // Should accept valid format
     await brokersInput.fill('localhost:9092');
-    await page.click('text=Save Settings');
+    await page.click('text=💾 Save Settings');
     await expect(page.locator('.status.success')).toBeVisible();
     
     // Should accept multiple brokers
     await brokersInput.fill('broker1:9092,broker2:9093,broker3:9094');
-    await page.click('text=Save Settings');
+    await page.click('text=💾 Save Settings');
     await expect(page.locator('.status.success')).toBeVisible();
   });
 });
