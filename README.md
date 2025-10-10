@@ -2,7 +2,7 @@
 
 > Complete Kafka toolkit with web UI, CLI tools, and comprehensive documentation
 
-[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/oriolrius/kafka-basics)
+[![Version](https://img.shields.io/badge/version-2.1.2-blue.svg)](https://github.com/oriolrius/kafka-basics)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 A modern, full-featured Kafka development toolkit with both **React Web UI** and **CLI tools** for producers, consumers, and topic administration.
@@ -322,4 +322,3 @@ MIT License - see LICENSE file for details
 
 **Author:** Oriol Rius  
 **Repository:** <https://github.com/oriolrius/kafka-basics>  
-**Version:** 2.1.0
