@@ -92,5 +92,5 @@
     "web": "concurrently \"pnpm api\" \"pnpm dev --host\""
   },
   "type": "module",
-  "version": "2.2.3"
+  "version": "2.2.4"
 }
