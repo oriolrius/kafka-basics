@@ -1,0 +1,134 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ published ]
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '9'
+
+jobs:
+  lint-and-build:
+    name: 🔍 Lint and Build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 💾 Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: ⚡ Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: 📦 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🔍 Run linting
+        run: pnpm lint
+
+      - name: 🏗️ Build project
+        run: pnpm build
+
+      - name: 📦 Test package creation
+        run: pnpm pack
+
+  # TODO: Uncomment when tests are mature enough
+  # test:
+  #   name: 🧪 Test (Node.js ${{ matrix.node-version }})
+  #   runs-on: ubuntu-latest
+  #   needs: lint-and-build
+  #   
+  #   strategy:
+  #     matrix:
+  #       node-version: [18, 20, 22]
+  #   
+  #   steps:
+  #     - name: 📥 Checkout code
+  #       uses: actions/checkout@v4
+
+  #     - name: 🟢 Setup Node.js ${{ matrix.node-version }}
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: ${{ matrix.node-version }}
+
+  #     - name: 📦 Setup pnpm
+  #       uses: pnpm/action-setup@v4
+  #       with:
+  #         version: ${{ env.PNPM_VERSION }}
+
+  #     - name: 📦 Install dependencies
+  #       run: pnpm install --frozen-lockfile
+
+  #     - name: 🏗️ Build project
+  #       run: pnpm build
+
+  #     - name: 🧪 Run tests
+  #       run: pnpm test
+  #       continue-on-error: true
+
+  publish:
+    name: 📦 Publish to npm
+    runs-on: ubuntu-latest
+    needs: [lint-and-build]
+    if: github.event_name == 'release' && github.event.action == 'published'
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 📦 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🏗️ Build project
+        run: pnpm build
+
+      - name: 🔍 Verify package contents
+        run: |
+          echo "📦 Package contents:"
+          pnpm pack --dry-run
+
+      - name: 🚀 Publish to npm
+        run: pnpm publish --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: 📧 Notify success
+        if: success()
+        run: |
+          echo "✅ Successfully published ${{ github.repository }} to npm!"
+          echo "🔗 Package: https://www.npmjs.com/package/@oriolrius/kafka-basics"

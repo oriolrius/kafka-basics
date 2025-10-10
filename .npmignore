@@ -1,0 +1,30 @@
+# Development files
+.git/
+.gitignore
+.vscode/
+.env*
+!.env.example
+
+# Testing
+test-results/
+playwright-report/
+playwright/.cache/
+tests/
+playwright.config.js
+
+# Build artifacts (keep dist for production builds)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Documentation that's not needed in package
+contrib/
+*.md
+!README.md
+
+# Development scripts
+.github/

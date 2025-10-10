@@ -151,3 +151,4 @@ coverage/
 # Build artifacts
 build/
 dist/
+.env.nexiona

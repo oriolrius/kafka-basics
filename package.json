@@ -1,4 +1,51 @@
 {
+  "name": "@oriolrius/kafka-basics",
+  "version": "2.1.2",
+  "description": "Complete Kafka toolkit with producers, consumers, and admin tools",
+  "main": "src/producers/producer.js",
+  "type": "module",
+  "author": "Oriol Rius",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oriolrius/kafka-basics.git"
+  },
+  "homepage": "https://github.com/oriolrius/kafka-basics#readme",
+  "bugs": {
+    "url": "https://github.com/oriolrius/kafka-basics/issues"
+  },
+  "keywords": [
+    "kafka",
+    "kafkajs",
+    "producer",
+    "consumer",
+    "cli",
+    "web-ui",
+    "react",
+    "avro",
+    "schema-registry",
+    "toolkit"
+  ],
+  "bin": {
+    "kafka-basics": "bin/kafka-basics.js",
+    "kstart": "bin/kstart.js",
+    "kpub": "bin/kpub.js",
+    "ksub": "bin/ksub.js",
+    "ktopic-info": "bin/ktopic-info.js"
+  },
+  "files": [
+    "src/",
+    "bin/",
+    "schemas/",
+    "examples/",
+    "docker-compose.yml",
+    "vite.config.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.1.0",
     "@kafkajs/confluent-schema-registry": "^3.3.0",
@@ -10,16 +57,14 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
-  "description": "Complete Kafka toolkit with producers, consumers, and admin tools",
   "devDependencies": {
     "@playwright/test": "^1.56.0",
     "@vitejs/plugin-react": "^5.0.4",
     "concurrently": "^9.2.1",
+    "eslint": "^8.57.1",
     "playwright": "^1.56.0",
     "vite": "^7.1.9"
   },
-  "main": "src/producers/producer.js",
-  "name": "kafka-basics",
   "scripts": {
     "api": "node src/api/server.js",
     "build": "vite build",
@@ -34,6 +79,10 @@
     "ksub-universal": "node src/consumers/universal-consumer.js",
     "ktopic-delete": "node src/admin/delete-topic.js",
     "ktopic-info": "node src/admin/topic-info.js",
+    "lint": "eslint src/ bin/ --ext .js",
+    "lint:fix": "eslint src/ bin/ --ext .js --fix",
+    "postversion": "git push && git push --tags",
+    "prepublishOnly": "pnpm build",
     "preview": "vite preview",
     "test": "playwright test",
     "test:debug": "playwright test --debug",
@@ -42,7 +91,5 @@
     "test:report": "playwright show-report --host 0.0.0.0",
     "test:ui": "playwright test --ui",
     "web": "concurrently \"pnpm api\" \"pnpm dev --host\""
-  },
-  "type": "module",
-  "version": "2.1.2"
+  }
 }
