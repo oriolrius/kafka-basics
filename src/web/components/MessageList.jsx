@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 
-function MessageList() {
-  const [topic, setTopic] = useState('test-topic');
+function MessageList({ topic, onTopicChange }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('');
@@ -17,12 +16,12 @@ function MessageList() {
 
       if (response.ok) {
         setMessages(data.messages || []);
-        setStatus(`✅ Loaded ${data.messages?.length || 0} messages`);
+        setStatus(`<i class="fas fa-check-circle"></i> Loaded ${data.messages?.length || 0} messages`);
       } else {
-        setStatus(`❌ Error: ${data.error}`);
+        setStatus(`<i class="fas fa-times-circle"></i> Error: ${data.error}`);
       }
     } catch (error) {
-      setStatus(`❌ Error: ${error.message}`);
+      setStatus(`<i class="fas fa-times-circle"></i> Error: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -30,7 +29,7 @@ function MessageList() {
 
   return (
     <div className="message-list">
-      <h2>📋 Message List</h2>
+      <h2><i className="fas fa-clipboard-list"></i> Message List</h2>
       <p>View all messages in a Kafka topic</p>
 
       <div className="form">
@@ -40,7 +39,7 @@ function MessageList() {
             id="list-topic"
             type="text"
             value={topic}
-            onChange={(e) => setTopic(e.target.value)}
+            onChange={(e) => onTopicChange(e.target.value)}
             placeholder="test-topic"
           />
         </div>
@@ -50,13 +49,13 @@ function MessageList() {
           className="btn-primary"
           disabled={loading}
         >
-          {loading ? 'Loading...' : '📥 Load Messages'}
+          {loading ? <><i className="fas fa-spinner fa-spin"></i> Loading...</> : <><i className="fas fa-inbox"></i> Load Messages</>}
         </button>
       </div>
 
       {status && (
-        <div className={status.startsWith('✅') ? 'status success' : 'status error'}>
-          {status}
+        <div className={status.includes('fa-check-circle') ? 'status success' : 'status error'}>
+          <span dangerouslySetInnerHTML={{ __html: status }}></span>
         </div>
       )}
 

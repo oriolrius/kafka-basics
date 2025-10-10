@@ -42,6 +42,46 @@ function Settings() {
     }
   }, []);
 
+  // Handle dynamic tooltip positioning to prevent overflow
+  useEffect(() => {
+    const handleTooltipPositioning = () => {
+      const tooltips = document.querySelectorAll('.tooltip-icon');
+      tooltips.forEach(tooltip => {
+        const rect = tooltip.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        
+        // Remove existing positioning classes
+        tooltip.classList.remove('tooltip-positioned-left', 'tooltip-positioned-right');
+        
+        // If tooltip is near the right edge, position it to the left
+        if (rect.right > viewportWidth - 150) {
+          tooltip.classList.add('tooltip-positioned-right');
+        }
+        // If tooltip is near the left edge, position it to the right
+        else if (rect.left < 150) {
+          tooltip.classList.add('tooltip-positioned-left');
+        }
+      });
+    };
+
+    // Run on mount and when window resizes
+    handleTooltipPositioning();
+    window.addEventListener('resize', handleTooltipPositioning);
+    
+    // Also run when mouse enters any tooltip (for dynamic content)
+    const tooltips = document.querySelectorAll('.tooltip-icon');
+    tooltips.forEach(tooltip => {
+      tooltip.addEventListener('mouseenter', handleTooltipPositioning);
+    });
+
+    return () => {
+      window.removeEventListener('resize', handleTooltipPositioning);
+      tooltips.forEach(tooltip => {
+        tooltip.removeEventListener('mouseenter', handleTooltipPositioning);
+      });
+    };
+  }, []);
+
   const handleChange = (field, value) => {
     setConfig(prev => ({ ...prev, [field]: value }));
     setSaved(false);
@@ -53,13 +93,13 @@ function Settings() {
       localStorage.setItem('kafka-connection-config', JSON.stringify(config));
       
       // Show success message
-      setStatus('✅ Configuration saved successfully! Restart the server to apply changes.');
+      setStatus('<i class="fas fa-check-circle"></i> Configuration saved successfully! Restart the server to apply changes.');
       setSaved(true);
       
       // Auto-hide success message after 5 seconds
       setTimeout(() => setStatus(''), 5000);
     } catch (error) {
-      setStatus(`❌ Error saving configuration: ${error.message}`);
+      setStatus(`<i class="fas fa-times-circle"></i> Error saving configuration: ${error.message}`);
     }
   };
 
@@ -81,7 +121,7 @@ function Settings() {
       };
       setConfig(defaultConfig);
       localStorage.removeItem('kafka-connection-config');
-      setStatus('ℹ️ Configuration reset to defaults');
+      setStatus('<i class="fas fa-info-circle"></i> Configuration reset to defaults');
       setSaved(false);
     }
   };
@@ -120,7 +160,7 @@ SCHEMA_REGISTRY_PASSWORD=${config.schemaRegistryPassword}
     a.click();
     URL.revokeObjectURL(url);
     
-    setStatus('✅ Configuration exported to .env file');
+    setStatus('<i class="fas fa-check-circle"></i> Configuration exported to .env file');
   };
 
   const handleTestConnection = async () => {
@@ -141,9 +181,9 @@ SCHEMA_REGISTRY_PASSWORD=${config.schemaRegistryPassword}
       setTestResults(results);
 
       if (results.success) {
-        setStatus('✅ Connection test passed! All systems are operational.');
+        setStatus('<i class="fas fa-check-circle"></i> Connection test passed! All systems are operational.');
       } else {
-        setStatus('❌ Connection test failed. See details below.');
+        setStatus('<i class="fas fa-times-circle"></i> Connection test failed. See details below.');
       }
     } catch (error) {
       setTestResults({
@@ -163,7 +203,7 @@ SCHEMA_REGISTRY_PASSWORD=${config.schemaRegistryPassword}
           },
         ],
       });
-      setStatus('❌ Failed to connect to API server. Make sure it is running.');
+      setStatus('<i class="fas fa-times-circle"></i> Failed to connect to API server. Make sure it is running.');
     } finally {
       setTesting(false);
     }
@@ -174,19 +214,21 @@ SCHEMA_REGISTRY_PASSWORD=${config.schemaRegistryPassword}
 
   return (
     <div className="settings">
-      <h2>⚙️ Connection Settings</h2>
+      <h2><i className="fas fa-wrench"></i> Connection Settings</h2>
       <p>Configure Kafka broker connection and authentication</p>
 
       <div className="settings-sections">
         {/* Broker Configuration */}
         <section className="settings-section">
-          <h3>🔌 Broker Configuration</h3>
-          
+          <h3><i className="fas fa-plug"></i> Broker Configuration</h3>
+
           <div className="form-group">
-            <label htmlFor="brokers">
-              Broker(s)
-              <span className="field-hint">Comma-separated list (e.g., localhost:9092,broker2:9092)</span>
-            </label>
+            <div className="field-label-wrapper">
+              <label htmlFor="brokers">Broker(s)</label>
+              <span className="tooltip-icon" data-tooltip="Comma-separated list (e.g., localhost:9092,broker2:9092)">
+                <i className="fas fa-info-circle"></i>
+              </span>
+            </div>
             <input
               id="brokers"
               type="text"
@@ -197,10 +239,12 @@ SCHEMA_REGISTRY_PASSWORD=${config.schemaRegistryPassword}
           </div>
 
           <div className="form-group">
-            <label htmlFor="clientId">
-              Client ID
-              <span className="field-hint">Unique identifier for this client</span>
-            </label>
+            <div className="field-label-wrapper">
+              <label htmlFor="clientId">Client ID</label>
+              <span className="tooltip-icon" data-tooltip="Unique identifier for this client">
+                <i className="fas fa-info-circle"></i>
+              </span>
+            </div>
             <input
               id="clientId"
               type="text"
@@ -211,10 +255,12 @@ SCHEMA_REGISTRY_PASSWORD=${config.schemaRegistryPassword}
           </div>
 
           <div className="form-group">
-            <label htmlFor="securityProtocol">
-              Security Protocol
-              <span className="field-hint">Communication security level</span>
-            </label>
+            <div className="field-label-wrapper">
+              <label htmlFor="securityProtocol">Security Protocol</label>
+              <span className="tooltip-icon" data-tooltip="Communication security level">
+                <i className="fas fa-info-circle"></i>
+              </span>
+            </div>
             <select
               id="securityProtocol"
               value={config.securityProtocol}
@@ -231,8 +277,8 @@ SCHEMA_REGISTRY_PASSWORD=${config.schemaRegistryPassword}
         {/* SSL/TLS Configuration */}
         {needsSsl && (
           <section className="settings-section">
-            <h3>🔒 SSL/TLS Configuration</h3>
-            
+            <h3><i className="fas fa-lock"></i> SSL/TLS Configuration</h3>
+
             <div className="form-group-checkbox">
               <label>
                 <input
@@ -252,7 +298,9 @@ SCHEMA_REGISTRY_PASSWORD=${config.schemaRegistryPassword}
                   onChange={(e) => handleChange('rejectUnauthorized', e.target.checked)}
                 />
                 <span>Reject unauthorized certificates</span>
-                <span className="field-hint">Disable for self-signed certificates</span>
+                <span className="tooltip-icon" data-tooltip="Disable for self-signed certificates">
+                  <i className="fas fa-info-circle"></i>
+                </span>
               </label>
             </div>
           </section>
@@ -261,13 +309,15 @@ SCHEMA_REGISTRY_PASSWORD=${config.schemaRegistryPassword}
         {/* SASL Authentication */}
         {needsSasl && (
           <section className="settings-section">
-            <h3>🔑 SASL Authentication</h3>
+            <h3><i className="fas fa-key"></i> SASL Authentication</h3>
             
             <div className="form-group">
-              <label htmlFor="saslMechanism">
-                SASL Mechanism
-                <span className="field-hint">Authentication method</span>
-              </label>
+              <div className="field-label-wrapper">
+                <label htmlFor="saslMechanism">SASL Mechanism</label>
+                <span className="tooltip-icon" data-tooltip="Authentication method">
+                  <i className="fas fa-info-circle"></i>
+                </span>
+              </div>
               <select
                 id="saslMechanism"
                 value={config.saslMechanism}
@@ -309,13 +359,15 @@ SCHEMA_REGISTRY_PASSWORD=${config.schemaRegistryPassword}
 
         {/* Schema Registry */}
         <section className="settings-section">
-          <h3>📋 Schema Registry</h3>
+          <h3><i className="fas fa-clipboard-list"></i> Schema Registry</h3>
           
           <div className="form-group">
-            <label htmlFor="schemaRegistryUrl">
-              Schema Registry URL
-              <span className="field-hint">Confluent Schema Registry endpoint</span>
-            </label>
+            <div className="field-label-wrapper">
+              <label htmlFor="schemaRegistryUrl">Schema Registry URL</label>
+              <span className="tooltip-icon" data-tooltip="Confluent Schema Registry endpoint">
+                <i className="fas fa-info-circle"></i>
+              </span>
+            </div>
             <input
               id="schemaRegistryUrl"
               type="text"
@@ -333,7 +385,9 @@ SCHEMA_REGISTRY_PASSWORD=${config.schemaRegistryPassword}
                 onChange={(e) => handleChange('schemaRegistryUseTls', e.target.checked)}
               />
               <span>Validate SSL certificates (strict mode)</span>
-              <span className="field-hint">Uncheck to accept self-signed certificates</span>
+              <span className="tooltip-icon" data-tooltip="Uncheck to accept self-signed certificates">
+                <i className="fas fa-info-circle"></i>
+              </span>
             </label>
           </div>
 
@@ -368,26 +422,26 @@ SCHEMA_REGISTRY_PASSWORD=${config.schemaRegistryPassword}
       {/* Action Buttons */}
       <div className="settings-actions">
         <button onClick={handleTestConnection} className="btn-test" disabled={testing}>
-          {testing ? '⏳ Testing...' : '🔍 Test Connection'}
+          {testing ? <><i className="fas fa-hourglass-half fa-spin"></i> Testing...</> : <><i className="fas fa-search"></i> Test Connection</>}
         </button>
         <button onClick={handleSave} className="btn-primary" disabled={saved}>
-          {saved ? '✓ Saved' : '💾 Save Configuration'}
+          {saved ? <><i className="fas fa-check"></i> Saved</> : <><i className="fas fa-save"></i> Save Configuration</>}
         </button>
         <button onClick={handleExport} className="btn-secondary">
-          📥 Export to .env
+          <i className="fas fa-download"></i> Export to .env
         </button>
         <button onClick={handleReset} className="btn-danger">
-          🔄 Reset to Defaults
+          <i className="fas fa-sync-alt"></i> Reset to Defaults
         </button>
       </div>
 
       {status && (
         <div className={
-          status.startsWith('✅') ? 'status success' :
-          status.startsWith('❌') ? 'status error' :
+          status.includes('fa-check-circle') ? 'status success' :
+          status.includes('fa-times-circle') ? 'status error' :
           'status info'
         }>
-          {status}
+          <span dangerouslySetInnerHTML={{ __html: status }}></span>
         </div>
       )}
 
@@ -397,7 +451,7 @@ SCHEMA_REGISTRY_PASSWORD=${config.schemaRegistryPassword}
           <h3>Connection Test Results</h3>
           <div className="test-summary">
             <div className={`test-status ${testResults.success ? 'success' : 'failed'}`}>
-              {testResults.success ? '✅ Success' : '❌ Failed'}
+              {testResults.success ? <><i className="fas fa-check-circle"></i> Success</> : <><i className="fas fa-times-circle"></i> Failed</>}
             </div>
             <div className="test-timestamp">
               Tested at: {new Date(testResults.timestamp).toLocaleString()}
@@ -428,9 +482,9 @@ SCHEMA_REGISTRY_PASSWORD=${config.schemaRegistryPassword}
                   <span className="step-number">{index + 1}</span>
                   <span className="step-name">{step.step}</span>
                   <span className={`step-status status-${step.status}`}>
-                    {step.status === 'success' && '✅'}
-                    {step.status === 'error' && '❌'}
-                    {step.status === 'warning' && '⚠️'}
+                    {step.status === 'success' && <i className="fas fa-check-circle"></i>}
+                    {step.status === 'error' && <i className="fas fa-times-circle"></i>}
+                    {step.status === 'warning' && <i className="fas fa-exclamation-triangle"></i>}
                   </span>
                 </div>
                 {step.details && (
@@ -457,7 +511,7 @@ SCHEMA_REGISTRY_PASSWORD=${config.schemaRegistryPassword}
       )}
 
       <div className="settings-note">
-        <h4>⚠️ Important Notes</h4>
+        <h4><i className="fas fa-exclamation-triangle"></i> Important Notes</h4>
         <ul>
           <li><strong>Client-side only:</strong> These settings are saved in your browser's localStorage</li>
           <li><strong>Server restart required:</strong> To apply these settings to the API server, export to .env and restart</li>

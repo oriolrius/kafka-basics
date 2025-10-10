@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 
-function Producer() {
+function Producer({ topic, onTopicChange }) {
   const [message, setMessage] = useState('');
   const [key, setKey] = useState('');
-  const [topic, setTopic] = useState('test-topic');
   const [format, setFormat] = useState('json');
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
@@ -30,14 +29,14 @@ function Producer() {
       const data = await response.json();
 
       if (response.ok) {
-        setStatus(`✅ Message sent successfully! Offset: ${data.offset}`);
+        setStatus(`<i class="fas fa-check-circle"></i> Message sent successfully! Offset: ${data.offset}`);
         setMessage('');
         setKey('');
       } else {
-        setStatus(`❌ Error: ${data.error}`);
+        setStatus(`<i class="fas fa-times-circle"></i> Error: ${data.error}`);
       }
     } catch (error) {
-      setStatus(`❌ Error: ${error.message}`);
+      setStatus(`<i class="fas fa-times-circle"></i> Error: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -45,7 +44,7 @@ function Producer() {
 
   return (
     <div className="producer">
-      <h2>📤 Kafka Producer</h2>
+      <h2><i className="fas fa-paper-plane"></i> Kafka Producer</h2>
       <p>Send messages to Kafka topics</p>
 
       <form onSubmit={handleSubmit} className="form">
@@ -55,7 +54,7 @@ function Producer() {
             id="topic"
             type="text"
             value={topic}
-            onChange={(e) => setTopic(e.target.value)}
+            onChange={(e) => onTopicChange(e.target.value)}
             placeholder="test-topic"
             required
           />
@@ -98,13 +97,13 @@ function Producer() {
         </div>
 
         <button type="submit" className="btn-primary" disabled={loading}>
-          {loading ? 'Sending...' : 'Send Message'}
+          {loading ? <><i className="fas fa-spinner fa-spin"></i> Sending...</> : <><i className="fas fa-paper-plane"></i> Send Message</>}
         </button>
       </form>
 
       {status && (
-        <div className={status.startsWith('✅') ? 'status success' : 'status error'}>
-          {status}
+        <div className={status.includes('fa-check-circle') ? 'status success' : 'status error'}>
+          <span dangerouslySetInnerHTML={{ __html: status }}></span>
         </div>
       )}
     </div>
