@@ -4,6 +4,7 @@ import { Kafka } from 'kafkajs';
 import dotenv from 'dotenv';
 import https from 'https';
 import { join } from 'path';
+import { buildKafkaConfig } from '../utils/kafka-config.js';
 
 // Load .env from user's working directory when using npx
 const envPath = process.env.USER_CWD ? join(process.env.USER_CWD, '.env') : '.env';
@@ -15,23 +16,41 @@ const PORT = process.env.API_PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// Kafka configuration
-const kafka = new Kafka({
-  clientId: process.env.KAFKA_CLIENT_ID || 'kafka-web-ui',
-  brokers: (process.env.KAFKA_BROKERS || 'localhost:9092').split(','),
-});
+// Silence the partitioner warning
+process.env.KAFKAJS_NO_PARTITIONER_WARNING = '1';
 
-const producer = kafka.producer();
-const admin = kafka.admin();
+// Kafka configuration - will be initialized asynchronously
+let kafka = null;
+let producer = null;
+let admin = null;
 const consumers = new Map(); // Store active consumers
 const consumerMessages = new Map(); // Store messages for each consumer
 const lastSentIndex = new Map(); // Track what messages were already sent to frontend
 
 // Initialize Kafka connections
 async function initKafka() {
+  // Build Kafka configuration using centralized utility (supports OAuth2)
+  const kafkaConfig = await buildKafkaConfig('kafka-web-api');
+
+  console.log('Kafka API Configuration:');
+  console.log('- Broker:', process.env.KAFKA_BROKER || process.env.KAFKA_BROKERS);
+  console.log('- TLS:', kafkaConfig.ssl ? 'Yes' : 'No');
+  console.log('- SASL:', kafkaConfig.sasl ? `Yes (${kafkaConfig.sasl.mechanism})` : 'No');
+  if (process.env.OAUTH_ENABLED === 'true') {
+    console.log('- OAuth2:', 'Enabled');
+    console.log('- Client ID:', process.env.OAUTH_CLIENT_ID);
+  }
+
+  kafka = new Kafka(kafkaConfig);
+
+  // Initialize producer and admin with OAuth2-enabled client
+  producer = kafka.producer();
+  admin = kafka.admin();
+
   await producer.connect();
   await admin.connect();
-  console.log('✅ Kafka producer and admin connected');
+
+  console.log('✅ Kafka producer and admin connected with OAuth2 support');
 }
 
 // Produce message
@@ -339,21 +358,46 @@ app.post('/api/test-connection', async (req, res) => {
 
     // Add SASL configuration if needed
     if (config.securityProtocol === 'SASL_PLAINTEXT' || config.securityProtocol === 'SASL_SSL') {
-      kafkaConfig.sasl = {
-        mechanism: config.saslMechanism || 'plain',
-        username: config.saslUsername || '',
-        password: config.saslPassword || '',
-      };
-      diagnostics.steps.push({
-        step: 'SASL authentication configuration',
-        status: 'success',
-        details: {
-          mechanism: kafkaConfig.sasl.mechanism,
-          username: kafkaConfig.sasl.username ? '***' : '(empty)',
-          password: kafkaConfig.sasl.password ? '***' : '(empty)',
-        },
-        timestamp: new Date().toISOString(),
-      });
+      // OAuth2 / OAUTHBEARER configuration
+      if (config.saslMechanism === 'oauthbearer' && config.oauthEnabled) {
+        const { buildOAuth2SaslConfig } = await import('../utils/oauth-token-provider.js');
+
+        kafkaConfig.sasl = await buildOAuth2SaslConfig({
+          tokenEndpointUri: config.oauthTokenEndpoint,
+          clientId: config.oauthClientId,
+          clientSecret: config.oauthClientSecret,
+          scope: config.oauthScope,
+          sslRejectUnauthorized: config.rejectUnauthorized !== false,
+        });
+
+        diagnostics.steps.push({
+          step: 'OAuth2 authentication configuration',
+          status: 'success',
+          details: {
+            mechanism: 'oauthbearer',
+            tokenEndpoint: config.oauthTokenEndpoint,
+            clientId: config.oauthClientId,
+          },
+          timestamp: new Date().toISOString(),
+        });
+      } else {
+        // Standard username/password authentication
+        kafkaConfig.sasl = {
+          mechanism: config.saslMechanism || 'plain',
+          username: config.saslUsername || '',
+          password: config.saslPassword || '',
+        };
+        diagnostics.steps.push({
+          step: 'SASL authentication configuration',
+          status: 'success',
+          details: {
+            mechanism: kafkaConfig.sasl.mechanism,
+            username: kafkaConfig.sasl.username ? '***' : '(empty)',
+            password: kafkaConfig.sasl.password ? '***' : '(empty)',
+          },
+          timestamp: new Date().toISOString(),
+        });
+      }
     }
 
     diagnostics.steps.push({
@@ -710,22 +754,91 @@ app.post('/api/test-connection', async (req, res) => {
   }
 });
 
+// Get .env configuration
+app.get('/api/config', (req, res) => {
+  try {
+    const config = {
+      // Broker settings
+      brokers: process.env.KAFKA_BROKER || process.env.KAFKA_BROKERS || 'localhost:9092',
+      clientId: process.env.KAFKA_CLIENT_ID || 'kafka-web-ui',
+
+      // Security settings - determine from configuration
+      securityProtocol: 'PLAINTEXT',
+
+      // SSL/TLS settings
+      useTls: process.env.KAFKA_USE_TLS === 'true',
+      rejectUnauthorized: process.env.KAFKA_REJECT_UNAUTHORIZED !== 'false',
+
+      // SASL settings
+      saslMechanism: process.env.KAFKA_SASL_MECHANISM || 'plain',
+      saslUsername: process.env.KAFKA_USERNAME || '',
+      saslPassword: process.env.KAFKA_PASSWORD || '',
+
+      // OAuth2 settings
+      oauthEnabled: process.env.OAUTH_ENABLED === 'true',
+      oauthTokenEndpoint: process.env.OAUTH_TOKEN_ENDPOINT_URI || '',
+      oauthClientId: process.env.OAUTH_CLIENT_ID || '',
+      oauthClientSecret: process.env.OAUTH_CLIENT_SECRET || '',
+      oauthScope: process.env.OAUTH_SCOPE || '',
+
+      // Schema Registry settings
+      schemaRegistryUrl: process.env.SCHEMA_REGISTRY_URL || 'http://localhost:8081',
+      schemaRegistryUseTls: process.env.SCHEMA_REGISTRY_USE_TLS !== 'false',
+      schemaRegistryUsername: process.env.SCHEMA_REGISTRY_USERNAME || '',
+      schemaRegistryPassword: process.env.SCHEMA_REGISTRY_PASSWORD || ''
+    };
+
+    // Determine security protocol from configuration
+    const hasSasl = process.env.KAFKA_SASL_MECHANISM || process.env.KAFKA_USERNAME || process.env.OAUTH_ENABLED === 'true';
+    const hasTls = process.env.KAFKA_USE_TLS === 'true';
+
+    if (hasSasl && hasTls) {
+      config.securityProtocol = 'SASL_SSL';
+    } else if (hasSasl) {
+      config.securityProtocol = 'SASL_PLAINTEXT';
+    } else if (hasTls) {
+      config.securityProtocol = 'SSL';
+    }
+
+    res.json(config);
+  } catch (error) {
+    console.error('Error reading configuration:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Start server
-initKafka()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`🚀 API server running on http://localhost:${PORT}`);
-    });
-  })
-  .catch((error) => {
-    console.error('Failed to initialize Kafka:', error);
-    process.exit(1);
-  });
+// Start server immediately, initialize Kafka in background
+app.listen(PORT, () => {
+  console.log(`🚀 API server running on http://localhost:${PORT}`);
+  console.log('⏳ Kafka initialization in progress...');
+});
+
+// Initialize Kafka in background with retries
+let kafkaInitialized = false;
+async function initKafkaWithRetries(maxRetries = 5, delayMs = 5000) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      await initKafka();
+      kafkaInitialized = true;
+      console.log('✅ Kafka initialization complete - API is fully operational');
+      return;
+    } catch (error) {
+      console.error(`❌ Kafka initialization attempt ${i + 1}/${maxRetries} failed:`, error.message);
+      if (i < maxRetries - 1) {
+        console.log(`⏳ Retrying in ${delayMs / 1000} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    }
+  }
+  console.error('⚠️  Failed to initialize Kafka after all retries. API server running but Kafka operations will fail.');
+}
+
+initKafkaWithRetries();
 
 // Cleanup on exit
 process.on('SIGINT', async () => {

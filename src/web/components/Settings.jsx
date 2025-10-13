@@ -5,19 +5,26 @@ function Settings() {
     // Broker settings
     brokers: 'localhost:9092',
     clientId: 'kafka-web-ui',
-    
+
     // Security settings
     securityProtocol: 'PLAINTEXT', // PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL
-    
+
     // SSL/TLS settings
     useTls: false,
     rejectUnauthorized: true,
-    
+
     // SASL settings
     saslMechanism: 'plain', // plain, scram-sha-256, scram-sha-512, aws, oauthbearer
     saslUsername: '',
     saslPassword: '',
-    
+
+    // OAuth2 settings
+    oauthEnabled: false,
+    oauthTokenEndpoint: 'https://kafka-basics-keycloak:55443/realms/kafka-basics/protocol/openid-connect/token',
+    oauthClientId: 'kafka-producer-client',
+    oauthClientSecret: '',
+    oauthScope: '',
+
     // Schema Registry settings
     schemaRegistryUrl: 'http://localhost:8081',
     schemaRegistryUseTls: false,
@@ -30,16 +37,36 @@ function Settings() {
   const [testing, setTesting] = useState(false);
   const [testResults, setTestResults] = useState(null);
 
-  // Load saved configuration on mount
+  // Load configuration on mount - first try API (.env), then localStorage
   useEffect(() => {
-    const savedConfig = localStorage.getItem('kafka-connection-config');
-    if (savedConfig) {
+    const loadConfig = async () => {
       try {
-        setConfig(JSON.parse(savedConfig));
-      } catch (e) {
-        console.error('Failed to load saved config:', e);
+        // First try to load from API (which reads .env)
+        const response = await fetch('/api/config');
+        if (response.ok) {
+          const envConfig = await response.json();
+          console.log('Loaded configuration from .env:', envConfig);
+          setConfig(envConfig);
+          return;
+        }
+      } catch (error) {
+        console.warn('Failed to load config from API, trying localStorage:', error);
       }
-    }
+
+      // Fallback to localStorage
+      const savedConfig = localStorage.getItem('kafka-connection-config');
+      if (savedConfig) {
+        try {
+          const parsed = JSON.parse(savedConfig);
+          console.log('Loaded configuration from localStorage');
+          setConfig(parsed);
+        } catch (e) {
+          console.error('Failed to load saved config:', e);
+        }
+      }
+    };
+
+    loadConfig();
   }, []);
 
   // Handle dynamic tooltip positioning to prevent overflow
@@ -114,6 +141,11 @@ function Settings() {
         saslMechanism: 'plain',
         saslUsername: '',
         saslPassword: '',
+        oauthEnabled: false,
+        oauthTokenEndpoint: 'https://kafka-basics-keycloak:55443/realms/kafka-basics/protocol/openid-connect/token',
+        oauthClientId: 'kafka-producer-client',
+        oauthClientSecret: '',
+        oauthScope: '',
         schemaRegistryUrl: 'http://localhost:8081',
         schemaRegistryUseTls: false,
         schemaRegistryUsername: '',
@@ -144,6 +176,13 @@ KAFKA_REJECT_UNAUTHORIZED=${config.rejectUnauthorized}
 KAFKA_SASL_MECHANISM=${config.saslMechanism}
 KAFKA_USERNAME=${config.saslUsername}
 KAFKA_PASSWORD=${config.saslPassword}
+
+# OAuth2 Configuration (for oauthbearer mechanism)
+OAUTH_ENABLED=${config.oauthEnabled}
+OAUTH_TOKEN_ENDPOINT_URI=${config.oauthTokenEndpoint}
+OAUTH_CLIENT_ID=${config.oauthClientId}
+OAUTH_CLIENT_SECRET=${config.oauthClientSecret}
+OAUTH_SCOPE=${config.oauthScope}
 
 # Schema Registry Configuration
 SCHEMA_REGISTRY_URL=${config.schemaRegistryUrl}
@@ -354,6 +393,89 @@ SCHEMA_REGISTRY_PASSWORD=${config.schemaRegistryPassword}
                 autoComplete="current-password"
               />
             </div>
+
+            {/* OAuth2 Configuration */}
+            {config.saslMechanism === 'oauthbearer' && (
+              <>
+                <div className="form-group-checkbox">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={config.oauthEnabled}
+                      onChange={(e) => handleChange('oauthEnabled', e.target.checked)}
+                    />
+                    <span>Enable OAuth2</span>
+                    <span className="tooltip-icon" data-tooltip="Use OAuth2 for authentication instead of username/password">
+                      <i className="fas fa-info-circle"></i>
+                    </span>
+                  </label>
+                </div>
+
+                {config.oauthEnabled && (
+                  <>
+                    <div className="form-group">
+                      <div className="field-label-wrapper">
+                        <label htmlFor="oauthTokenEndpoint">OAuth2 Token Endpoint</label>
+                        <span className="tooltip-icon" data-tooltip="Keycloak token endpoint URL">
+                          <i className="fas fa-info-circle"></i>
+                        </span>
+                      </div>
+                      <input
+                        id="oauthTokenEndpoint"
+                        type="text"
+                        value={config.oauthTokenEndpoint}
+                        onChange={(e) => handleChange('oauthTokenEndpoint', e.target.value)}
+                        placeholder="https://kafka-basics-keycloak:55443/realms/kafka-basics/protocol/openid-connect/token"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <div className="field-label-wrapper">
+                        <label htmlFor="oauthClientId">OAuth2 Client ID</label>
+                        <span className="tooltip-icon" data-tooltip="Client ID from Keycloak">
+                          <i className="fas fa-info-circle"></i>
+                        </span>
+                      </div>
+                      <input
+                        id="oauthClientId"
+                        type="text"
+                        value={config.oauthClientId}
+                        onChange={(e) => handleChange('oauthClientId', e.target.value)}
+                        placeholder="kafka-producer-client"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="oauthClientSecret">OAuth2 Client Secret</label>
+                      <input
+                        id="oauthClientSecret"
+                        type="password"
+                        value={config.oauthClientSecret}
+                        onChange={(e) => handleChange('oauthClientSecret', e.target.value)}
+                        placeholder="Enter client secret"
+                        autoComplete="new-password"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <div className="field-label-wrapper">
+                        <label htmlFor="oauthScope">OAuth2 Scope (optional)</label>
+                        <span className="tooltip-icon" data-tooltip="OAuth2 scope (usually not needed for Kafka)">
+                          <i className="fas fa-info-circle"></i>
+                        </span>
+                      </div>
+                      <input
+                        id="oauthScope"
+                        type="text"
+                        value={config.oauthScope}
+                        onChange={(e) => handleChange('oauthScope', e.target.value)}
+                        placeholder="Leave empty if not required"
+                      />
+                    </div>
+                  </>
+                )}
+              </>
+            )}
           </section>
         )}
 

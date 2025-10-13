@@ -1,0 +1,121 @@
+services:
+  # Keycloak OAuth2 Authorization Server
+  kafka-basics-keycloak:
+    image: quay.io/keycloak/keycloak:26.3.3
+    container_name: kafka-basics-keycloak
+    hostname: kafka-basics-keycloak
+    ports:
+      - "55080:55080"  # HTTP port - both host and container use 55080
+      - "55443:55443"  # HTTPS port - both host and container use 55443
+    volumes:
+      - ./oauth2/keycloak/realms:/opt/keycloak/data/import
+      - ./oauth2/keycloak/keycloak.server.keystore.p12:/opt/keycloak/data/certs/keycloak.server.keystore.p12
+    command: "-v start --import-realm --features=token-exchange,authorization,scripts --http-port=55080 --https-port=55443 --https-key-store-file=/opt/keycloak/data/certs/keycloak.server.keystore.p12 --https-key-store-password=changeit --hostname=kafka-basics-keycloak"
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_HTTP_ENABLED=true
+      - KC_HOSTNAME=kafka-basics-keycloak
+      - KC_HOSTNAME_STRICT=false
+    networks:
+      - kafka-basics-oauth-network
+
+  # Kafka Broker with Strimzi OAuth2
+  kafka-basics-broker-oauth:
+    image: kafka-basics/strimzi-oauth-kafka
+    build: ./oauth2/kafka
+    container_name: kafka-basics-broker-oauth
+    hostname: kafka-basics
+    ports:
+      - "9093:9093"
+    depends_on:
+      kafka-basics-keycloak:
+        condition: service_started
+    volumes:
+      - ./oauth2/kafka/certificates:/tmp/kafka:ro
+    environment:
+      # KAFKA Configuration
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_NODE_ID: "1"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka-basics:9091"
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_SASL_MECHANISM_CONTROLLER_PROTOCOL: SCRAM-SHA-512
+
+      # Listeners - using port 9093 for external OAuth access
+      KAFKA_LISTENERS: CONTROLLER://kafka-basics:9091,REPLICATION://kafka-basics:9092,CLIENT://kafka-basics:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:SASL_PLAINTEXT,REPLICATION:SSL,CLIENT:SASL_SSL
+      KAFKA_SASL_ENABLED_MECHANISMS: OAUTHBEARER
+      KAFKA_INTER_BROKER_LISTENER_NAME: CLIENT
+      KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: OAUTHBEARER
+      KAFKA_SSL_SECURE_RANDOM_IMPLEMENTATION: SHA1PRNG
+      KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
+
+      # Controller authentication
+      KAFKA_LISTENER_NAME_CONTROLLER_SASL_ENABLED_MECHANISMS: SCRAM-SHA-512
+      KAFKA_LISTENER_NAME_CONTROLLER_SCRAM__2DSHA__2D512_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"admin\" password=\"admin-secret\";"
+
+      # Replication SSL
+      KAFKA_LISTENER_NAME_REPLICATION_SSL_KEYSTORE_LOCATION: /tmp/kafka/cluster.keystore.p12
+      KAFKA_LISTENER_NAME_REPLICATION_SSL_KEYSTORE_PASSWORD: Z_pkTh9xgZovK4t34cGB2o6afT4zZg0L
+      KAFKA_LISTENER_NAME_REPLICATION_SSL_KEYSTORE_TYPE: PKCS12
+      KAFKA_LISTENER_NAME_REPLICATION_SSL_TRUSTSTORE_LOCATION: /tmp/kafka/cluster.truststore.p12
+      KAFKA_LISTENER_NAME_REPLICATION_SSL_TRUSTSTORE_PASSWORD: Z_pkTh9xgZovK4t34cGB2o6afT4zZg0L
+      KAFKA_LISTENER_NAME_REPLICATION_SSL_TRUSTSTORE_TYPE: PKCS12
+      KAFKA_LISTENER_NAME_REPLICATION_SSL_CLIENT_AUTH: required
+
+      # Client SSL Configuration
+      KAFKA_LISTENER_NAME_CLIENT_SSL_KEYSTORE_LOCATION: /tmp/kafka/cluster.keystore.p12
+      KAFKA_LISTENER_NAME_CLIENT_SSL_KEYSTORE_PASSWORD: Z_pkTh9xgZovK4t34cGB2o6afT4zZg0L
+      KAFKA_LISTENER_NAME_CLIENT_SSL_KEYSTORE_TYPE: PKCS12
+      KAFKA_LISTENER_NAME_CLIENT_SSL_TRUSTSTORE_LOCATION: /tmp/kafka/cluster.truststore.p12
+      KAFKA_LISTENER_NAME_CLIENT_SSL_TRUSTSTORE_PASSWORD: Z_pkTh9xgZovK4t34cGB2o6afT4zZg0L
+      KAFKA_LISTENER_NAME_CLIENT_SSL_TRUSTSTORE_TYPE: PKCS12
+      KAFKA_LISTENER_NAME_CLIENT_SSL_CLIENT_AUTH: none
+
+      # Client OAuth Configuration
+      KAFKA_LISTENER_NAME_CLIENT_OAUTHBEARER_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required;"
+      KAFKA_LISTENER_NAME_CLIENT_OAUTHBEARER_SASL_LOGIN_CALLBACK_HANDLER_CLASS: io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler
+      KAFKA_LISTENER_NAME_CLIENT_OAUTHBEARER_SASL_SERVER_CALLBACK_HANDLER_CLASS: io.strimzi.kafka.oauth.server.JaasServerOauthValidatorCallbackHandler
+
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+      KAFKA_PRINCIPAL_BUILDER_CLASS: io.strimzi.kafka.oauth.server.OAuthKafkaPrincipalBuilder
+
+      KAFKA_SUPER_USERS: User:service-account-kafka-broker
+
+      KAFKA_CONNECTIONS_MAX_REAUTH_MS: 3600000
+
+      # Strimzi OAuth Configuration
+      # Authentication config (for inter-broker)
+      OAUTH_CLIENT_ID: "kafka-broker"
+      OAUTH_CLIENT_SECRET: "kafka-broker-secret"
+      OAUTH_TOKEN_ENDPOINT_URI: "https://kafka-basics-keycloak:55443/realms/kafka-basics/protocol/openid-connect/token"
+
+      # Validation config
+      OAUTH_VALID_ISSUER_URI: "https://kafka-basics-keycloak:55443/realms/kafka-basics"
+      OAUTH_JWKS_ENDPOINT_URI: "https://kafka-basics-keycloak:55443/realms/kafka-basics/protocol/openid-connect/certs"
+
+      # SSL/TLS Configuration for OAuth endpoints
+      OAUTH_SSL_TRUSTSTORE_LOCATION: /tmp/kafka/ca-truststore.p12
+      OAUTH_SSL_TRUSTSTORE_PASSWORD: changeit
+      OAUTH_SSL_TRUSTSTORE_TYPE: PKCS12
+
+      # username extraction from JWT token claim
+      OAUTH_USERNAME_CLAIM: preferred_username
+
+      OAUTH_JWKS_REFRESH_MIN_PAUSE_SECONDS: "5"
+
+      # For start.sh script
+      KEYCLOAK_HOST: kafka-basics-keycloak
+      KEYCLOAK_URI: http://kafka-basics-keycloak:55080
+      REALM: kafka-basics
+
+      KAFKA_ADVERTISED_LISTENERS: CLIENT://localhost:9093
+
+    networks:
+      - kafka-basics-oauth-network
+
+networks:
+  kafka-basics-oauth-network:
+    driver: bridge
+    name: kafka-basics-oauth-network

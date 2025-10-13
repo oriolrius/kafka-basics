@@ -1,48 +1,27 @@
-const { Kafka } = require('kafkajs');
-require('dotenv').config();
+import { Kafka } from 'kafkajs';
+import { buildKafkaConfig } from '../utils/kafka-config.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 // Silence the partitioner warning
 process.env.KAFKAJS_NO_PARTITIONER_WARNING = '1';
 
-// Build SSL configuration
-let sslConfig = false;
-if (process.env.KAFKA_USE_TLS === 'true') {
-  sslConfig = {
-    rejectUnauthorized: process.env.KAFKA_REJECT_UNAUTHORIZED !== 'false'
-  };
-}
-
-// Build SASL configuration
-let saslConfig = undefined;
-if (process.env.KAFKA_USERNAME && process.env.KAFKA_PASSWORD) {
-  saslConfig = {
-    mechanism: process.env.KAFKA_SASL_MECHANISM || 'plain',
-    username: process.env.KAFKA_USERNAME,
-    password: process.env.KAFKA_PASSWORD,
-  };
-}
-
-console.log('Kafka Configuration:');
-console.log('- Broker:', process.env.KAFKA_BROKER);
-console.log('- TLS:', process.env.KAFKA_USE_TLS === 'true');
-console.log('- SASL:', saslConfig ? `Yes (${saslConfig.mechanism})` : 'No');
-console.log('- Reject Unauthorized:', process.env.KAFKA_REJECT_UNAUTHORIZED !== 'false');
-
-// Create Kafka client with increased timeouts
-const kafka = new Kafka({
-  clientId: process.env.KAFKA_CLIENT_ID || 'simple-producer',
-  brokers: [process.env.KAFKA_BROKER],
-  ssl: sslConfig,
-  sasl: saslConfig,
-  connectionTimeout: 10000,
-  requestTimeout: 30000,
-  retry: {
-    initialRetryTime: 100,
-    retries: 3
-  }
-});
-
 async function publishMessage() {
+  // Build Kafka configuration using centralized utility (supports OAuth2)
+  const kafkaConfig = await buildKafkaConfig();
+
+  console.log('Kafka Configuration:');
+  console.log('- Broker:', process.env.KAFKA_BROKER);
+  console.log('- TLS:', kafkaConfig.ssl ? 'Yes' : 'No');
+  console.log('- SASL:', kafkaConfig.sasl ? `Yes (${kafkaConfig.sasl.mechanism})` : 'No');
+  if (process.env.OAUTH_ENABLED === 'true') {
+    console.log('- OAuth2:', 'Enabled');
+    console.log('- Client ID:', process.env.OAUTH_CLIENT_ID);
+  }
+
+  // Create Kafka client
+  const kafka = new Kafka(kafkaConfig);
   const producer = kafka.producer();
 
   try {
@@ -51,12 +30,17 @@ async function publishMessage() {
     await producer.connect();
     console.log('Connected successfully!');
 
+    // Get message from command-line args or environment variable
+    const args = process.argv.slice(2);
+    const messageIndex = args.indexOf('--message');
+    const messageContent = messageIndex !== -1 ? args[messageIndex + 1] : process.env.KAFKA_MESSAGE_CONTENT || 'Test message';
+
     // Send message
     const message = {
       topic: process.env.KAFKA_TOPIC,
       messages: [
         {
-          value: process.env.KAFKA_MESSAGE_CONTENT,
+          value: messageContent,
           timestamp: Date.now().toString(),
         },
       ],

@@ -15,8 +15,9 @@ A modern, full-featured Kafka development toolkit with both **React Web UI** and
 - 📥 **Consumers** - Real-time message streaming with auto-scroll
 - ⚙️ **Admin Tools** - Topic management and inspection
 - 🔧 **Connection Settings** - Configure all Kafka security protocols
+- 🔐 **OAuth2/OAUTHBEARER** - Complete OAuth2 authentication with Keycloak
 - 🧪 **Testing** - Playwright E2E test suite
-- 🐳 **Docker Support** - Kafka broker setup included
+- 🐳 **Docker Support** - Kafka broker setup included (simple + OAuth2)
 
 ## 🚀 Quick Start
 
@@ -84,8 +85,10 @@ pnpm ksub             # Consume messages
 
 | Document | Description |
 |----------|-------------|
-| [TESTING.md](TESTING.md) | Playwright testing guide |
 | [README.md](README.md) | This file - overview and CLI reference |
+| [OAUTH2_SETUP.md](OAUTH2_SETUP.md) | Complete OAuth2/OAUTHBEARER setup guide |
+| [TESTING.md](TESTING.md) | Playwright testing guide |
+| [CLAUDE.md](CLAUDE.md) | Deep technical documentation for AI assistants |
 
 ## 🔧 CLI Usage
 
@@ -428,6 +431,22 @@ SCHEMA_REGISTRY_USERNAME=registry-user
 SCHEMA_REGISTRY_PASSWORD=registry-pass
 ```
 
+**With OAuth2/OAUTHBEARER:**
+
+```bash
+KAFKA_BROKER=kafka-basics:9093
+KAFKA_SASL_MECHANISM=oauthbearer
+OAUTH_ENABLED=true
+OAUTH_CLIENT_ID=kafka-producer-client
+OAUTH_CLIENT_SECRET=kafka-producer-client-secret
+OAUTH_TOKEN_ENDPOINT_URI=https://kafka-basics-keycloak:55443/realms/kafka-basics/protocol/openid-connect/token
+KAFKA_USE_TLS=true
+KAFKA_REJECT_UNAUTHORIZED=false
+KAFKA_SSL_CA_LOCATION=./oauth2/certificates/ca.crt
+```
+
+**📘 For complete OAuth2 setup and configuration:** [OAUTH2_SETUP.md](OAUTH2_SETUP.md)
+
 ### Web UI Settings
 
 Alternatively, configure connection settings directly in the **🔧 Settings** tab:
@@ -438,6 +457,59 @@ Alternatively, configure connection settings directly in the **🔧 Settings** t
 - SSL/TLS certificates and verification
 - Schema Registry URL and credentials
 - Export current settings to `.env` file
+
+### OAuth2 / OAUTHBEARER Configuration
+
+kafka-basics includes complete **OAuth2 token-based authentication** support with:
+
+- 🔐 **OAUTHBEARER SASL mechanism** for Kafka
+- 🎫 **Automatic token management** with caching and refresh
+- 🔑 **Keycloak integration** (pre-configured realm and clients)
+- 🛡️ **TLS/SSL encryption** with self-signed certificates
+- 🌐 **Full Web UI support** for OAuth2 settings
+
+**Quick Start with OAuth2:**
+
+```bash
+# 1. Add hostnames to /etc/hosts
+sudo sh -c 'echo "127.0.0.1 kafka-basics-keycloak kafka-basics" >> /etc/hosts'
+
+# 2. Start Keycloak + OAuth2-enabled Kafka
+docker compose -f docker-compose-oauth.yml up -d
+
+# 3. Configure environment (create .env file)
+cat > .env << 'EOF'
+KAFKA_BROKER=kafka-basics:9093
+KAFKA_SASL_MECHANISM=oauthbearer
+OAUTH_ENABLED=true
+OAUTH_CLIENT_ID=kafka-producer-client
+OAUTH_CLIENT_SECRET=kafka-producer-client-secret
+OAUTH_TOKEN_ENDPOINT_URI=https://kafka-basics-keycloak:55443/realms/kafka-basics/protocol/openid-connect/token
+KAFKA_USE_TLS=true
+KAFKA_REJECT_UNAUTHORIZED=false
+KAFKA_SSL_CA_LOCATION=./oauth2/certificates/ca.crt
+EOF
+
+# 4. Test OAuth2 authentication
+pnpm kpub  # Producer with OAuth2
+pnpm ksub  # Consumer with OAuth2
+pnpm web   # Web UI with OAuth2
+```
+
+**Pre-configured OAuth2 clients:**
+
+| Client ID | Secret | Purpose |
+|-----------|--------|---------|
+| `kafka-producer-client` | `kafka-producer-client-secret` | Producer applications |
+| `kafka-consumer-client` | `kafka-consumer-client-secret` | Consumer applications |
+| `kafka-broker` | `kafka-broker-secret` | Inter-broker communication |
+
+**📚 Complete OAuth2 Guide:** See [OAUTH2_SETUP.md](OAUTH2_SETUP.md) for:
+- Detailed setup instructions
+- Keycloak administration
+- Certificate management
+- Troubleshooting
+- Production considerations
 
 ## 🧪 Testing & Development
 
