@@ -83,12 +83,12 @@ pnpm ksub             # Consume messages
 
 ## 📖 Documentation
 
-| Document | Description |
-|----------|-------------|
-| [README.md](README.md) | This file - overview and CLI reference |
-| [OAUTH2_SETUP.md](OAUTH2_SETUP.md) | Complete OAuth2/OAUTHBEARER setup guide |
-| [TESTING.md](TESTING.md) | Playwright testing guide |
-| [CLAUDE.md](CLAUDE.md) | Deep technical documentation for AI assistants |
+| Document                        | Description                                    |
+| ------------------------------- | ---------------------------------------------- |
+| [README.md](README.md)             | This file - overview and CLI reference         |
+| [OAUTH2_SETUP.md](OAUTH2_SETUP.md) | Complete OAuth2/OAUTHBEARER setup guide        |
+| [TESTING.md](TESTING.md)           | Playwright testing guide                       |
+| [CLAUDE.md](CLAUDE.md)             | Deep technical documentation for AI assistants |
 
 ## 🔧 CLI Usage
 
@@ -196,7 +196,7 @@ docker compose up -d
 pnpm web
 ```
 
-Access the interface at: **<http://localhost:3000>**
+Access the interface at: **[http://localhost:3000](http://localhost:3000)**
 
 > **Note:** The `docker compose` command starts a local Kafka broker for testing purposes only. If you already have a Kafka broker running (locally or remotely), skip this step and configure the connection in the Settings tab.
 
@@ -445,7 +445,7 @@ KAFKA_REJECT_UNAUTHORIZED=false
 KAFKA_SSL_CA_LOCATION=./oauth2/certificates/ca.crt
 ```
 
-**📘 For complete OAuth2 setup and configuration:** [OAUTH2_SETUP.md](OAUTH2_SETUP.md)
+**📘 For complete OAuth2 setup and configuration:** [OAUTH2_SE€TUP.md](OAUTH2_SETUP.md)
 
 ### Web UI Settings
 
@@ -498,13 +498,14 @@ pnpm web   # Web UI with OAuth2
 
 **Pre-configured OAuth2 clients:**
 
-| Client ID | Secret | Purpose |
-|-----------|--------|---------|
-| `kafka-producer-client` | `kafka-producer-client-secret` | Producer applications |
-| `kafka-consumer-client` | `kafka-consumer-client-secret` | Consumer applications |
-| `kafka-broker` | `kafka-broker-secret` | Inter-broker communication |
+| Client ID                 | Secret                           | Purpose                    |
+| ------------------------- | -------------------------------- | -------------------------- |
+| `kafka-producer-client` | `kafka-producer-client-secret` | Producer applications      |
+| `kafka-consumer-client` | `kafka-consumer-client-secret` | Consumer applications      |
+| `kafka-broker`          | `kafka-broker-secret`          | Inter-broker communication |
 
 **📚 Complete OAuth2 Guide:** See [OAUTH2_SETUP.md](OAUTH2_SETUP.md) for:
+
 - Detailed setup instructions
 - Keycloak administration
 - Certificate management
@@ -600,7 +601,7 @@ KAFKA_TOPIC=my-topic npx @oriolrius/kafka-basics ksub
 
 1. (Optional) Start local Kafka broker for testing: `docker compose up -d`
 2. Launch UI: `pnpm web`
-3. Open browser: <http://localhost:3000>
+3. Open browser: [http://localhost:3000](http://localhost:3000)
 4. Go to **Settings** → Configure connection (use `localhost:9092` if using Docker)
 5. Go to **Producer** → Send test message
 6. Go to **Consumer** → Start consumer and see messages
@@ -644,5 +645,5 @@ MIT License - see LICENSE file for details
 
 ---
 
-**Author:** Oriol Rius  
-**Repository:** <https://github.com/oriolrius/kafka-basics>  
+**Author:** Oriol Rius
+**Repository:** [https://github.com/oriolrius/kafka-basics](https://github.com/oriolrius/kafka-basics)
