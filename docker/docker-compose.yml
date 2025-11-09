@@ -1,0 +1,141 @@
+services:
+  # Apache Kafka 4.1.0 (KRaft mode)
+  kafka:
+    image: apache/kafka:4.1.0
+    container_name: kafka-basics-kafka
+    restart: unless-stopped
+    networks:
+      - kafka-basics-network
+    ports:
+      - "${KAFKA_EXTERNAL_PORT:-9092}:9092"
+    environment:
+      # KRaft configuration
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      # Listeners configuration
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+      # Cluster ID (stable UUID for KRaft)
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+
+      # Topic settings
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+
+      # Log settings
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
+    volumes:
+      - ./data/kafka:/tmp/kraft-combined-logs
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Backend API Server
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: backend
+    image: kafka-basics-backend:${IMAGE_TAG:-latest}
+    container_name: kafka-basics-backend
+    restart: unless-stopped
+    networks:
+      - kafka-basics-network
+    environment:
+      # Server configuration
+      - NODE_ENV=${NODE_ENV:-production}
+      - API_PORT=${API_PORT:-3001}
+      - HOST=0.0.0.0
+
+      # Kafka Broker Configuration
+      - KAFKA_BROKER=${KAFKA_BROKER:-kafka:9092}
+      - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:9092}
+      - KAFKA_CLIENT_ID=${KAFKA_CLIENT_ID:-kafka-basics-client}
+      - KAFKA_TOPIC=${KAFKA_TOPIC:-test-topic}
+
+      # Security
+      - KAFKA_USE_TLS=${KAFKA_USE_TLS:-false}
+      - KAFKA_REJECT_UNAUTHORIZED=${KAFKA_REJECT_UNAUTHORIZED:-true}
+      - KAFKA_SASL_MECHANISM=${KAFKA_SASL_MECHANISM:-}
+      - KAFKA_USERNAME=${KAFKA_USERNAME:-}
+      - KAFKA_PASSWORD=${KAFKA_PASSWORD:-}
+
+      # OAuth2
+      - OAUTH_ENABLED=${OAUTH_ENABLED:-false}
+      - OAUTH_CLIENT_ID=${OAUTH_CLIENT_ID:-}
+      - OAUTH_CLIENT_SECRET=${OAUTH_CLIENT_SECRET:-}
+      - OAUTH_TOKEN_ENDPOINT_URI=${OAUTH_TOKEN_ENDPOINT_URI:-}
+      - OAUTH_JWKS_ENDPOINT_URI=${OAUTH_JWKS_ENDPOINT_URI:-}
+
+      # Consumer Settings
+      - KAFKA_CONSUMER_GROUP=${KAFKA_CONSUMER_GROUP:-kafka-basics-group}
+      - KAFKA_FROM_BEGINNING=${KAFKA_FROM_BEGINNING:-true}
+
+      # Schema Registry
+      - SCHEMA_REGISTRY_URL=${SCHEMA_REGISTRY_URL:-}
+      - SCHEMA_REGISTRY_USE_TLS=${SCHEMA_REGISTRY_USE_TLS:-false}
+      - SCHEMA_REGISTRY_USERNAME=${SCHEMA_REGISTRY_USERNAME:-}
+      - SCHEMA_REGISTRY_PASSWORD=${SCHEMA_REGISTRY_PASSWORD:-}
+    ports:
+      - "${BACKEND_EXTERNAL_PORT:-3001}:3001"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    security_opt:
+      - no-new-privileges:true
+
+  # Frontend UI
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: frontend
+      args:
+        - VITE_API_URL=${VITE_API_URL:-/api}
+    image: kafka-basics-frontend:${IMAGE_TAG:-latest}
+    container_name: kafka-basics-frontend
+    restart: unless-stopped
+    networks:
+      - kafka-basics-network
+    ports:
+      - "${FRONTEND_EXTERNAL_PORT:-8080}:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:uid=1001,gid=1001
+      - /var/run:uid=1001,gid=1001
+      - /var/log/nginx:uid=1001,gid=1001
+
+networks:
+  kafka-basics-network:
+    name: kafka-basics-network
+    driver: bridge

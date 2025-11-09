@@ -1,0 +1,65 @@
+# Node modules
+node_modules
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Build output
+dist
+.vite
+
+# Development files
+.git
+.github
+.vscode
+.idea
+
+# Test files
+tests
+playwright-report
+test-results
+*.spec.js
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# OAuth2 infrastructure (not needed in web image)
+oauth2
+certs
+
+# Documentation
+docs
+*.md
+!README.md
+assets
+screenshots
+
+# Development tools
+.eslintrc*
+.prettierrc*
+playwright.config.js
+playwright.screenshots.config.js
+
+# Temporary files
+tmp
+temp
+*.tmp
+*.swp
+*.swo
+
+# Coverage
+coverage
+
+# Local docker compose (use docker/docker-compose.yml instead)
+docker-compose.yml
+docker-compose-oauth.yml

@@ -867,7 +867,11 @@ app.get('/api/config', (req, res) => {
   }
 });
 
-// Health check
+// Health check endpoints (both /health and /api/health for compatibility)
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
