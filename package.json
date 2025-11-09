@@ -31,7 +31,7 @@
     "playwright": "^1.56.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "\u003e=18.0.0"
   },
   "files": [
     "src/",
@@ -73,10 +73,10 @@
     "docker:build": "docker build -f docker/Dockerfile -t kafka-basics .",
     "docker:build:backend": "docker build -f docker/Dockerfile --target backend -t kafka-basics-backend .",
     "docker:build:frontend": "docker build -f docker/Dockerfile --target frontend -t kafka-basics-frontend .",
-    "docker:up": "cd docker && docker compose up -d",
-    "docker:down": "cd docker && docker compose down",
-    "docker:logs": "cd docker && docker compose logs -f",
-    "docker:clean": "cd docker && docker compose down -v && docker system prune -f",
+    "docker:clean": "cd docker \u0026\u0026 docker compose down -v \u0026\u0026 docker system prune -f",
+    "docker:down": "cd docker \u0026\u0026 docker compose down",
+    "docker:logs": "cd docker \u0026\u0026 docker compose logs -f",
+    "docker:up": "cd docker \u0026\u0026 docker compose up -d",
     "kdiagnose": "node src/utils/diagnostic.js",
     "klist": "node src/admin/list-messages.js",
     "kpub": "node src/producers/producer.js",
@@ -89,7 +89,7 @@
     "ktopic-info": "node src/admin/topic-info.js",
     "lint": "eslint src/ bin/ --ext .js",
     "lint:fix": "eslint src/ bin/ --ext .js --fix",
-    "postversion": "git push && git push --tags",
+    "postversion": "git push \u0026\u0026 git push --tags",
     "prepublishOnly": "pnpm build",
     "preview": "vite preview",
     "test": "playwright test",
@@ -102,5 +102,5 @@
     "web": "concurrently \"pnpm api\" \"pnpm dev --host\""
   },
   "type": "module",
-  "version": "3.0.0"
+  "version": "3.1.0"
 }
