@@ -52,7 +52,6 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            type=sha,prefix=sha-,format=short
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Extract metadata for frontend
@@ -66,7 +65,6 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            type=sha,prefix=sha-,format=short
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push backend image
@@ -114,43 +112,6 @@ jobs:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}
           subject-digest: ${{ steps.build-frontend.outputs.digest }}
           push-to-registry: true
-
-  cleanup-sha256-tags:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request'
-    permissions:
-      packages: write
-
-    strategy:
-      matrix:
-        image: [backend, frontend]
-
-    steps:
-      - name: Delete SHA256 digest tags
-        run: |
-          echo "Cleaning up SHA256 digest tags for ${{ matrix.image }}..."
-
-          # Get all package versions with sha256- tags
-          # Note: Package path needs proper URL encoding
-          PACKAGE_PATH="kafka-basics%2F${{ matrix.image }}"
-
-          VERSIONS=$(gh api "user/packages/container/${PACKAGE_PATH}/versions" --paginate 2>&1 | \
-            jq -r 'if type == "array" then .[] | select(.metadata.container.tags) | select(.metadata.container.tags[] | startswith("sha256-")) | .id else empty end' || true)
-
-          if [ -z "$VERSIONS" ]; then
-            echo "No SHA256 tagged versions to clean up"
-            exit 0
-          fi
-
-          # Delete each version
-          echo "$VERSIONS" | while read -r version_id; do
-            echo "Deleting version $version_id..."
-            gh api --method DELETE "user/packages/container/${PACKAGE_PATH}/versions/$version_id" && \
-              echo "  ✓ Deleted" || echo "  ✗ Failed"
-          done
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   security-scan:
     needs: build-and-push
