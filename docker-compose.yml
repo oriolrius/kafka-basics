@@ -1,31 +1,119 @@
 services:
-  kafka-basics-broker:
-    image: apache/kafka:latest
-    container_name: kafka-basics-broker
-    hostname: kafka-basics-broker
-    user: "0:0"
+  # Keycloak OAuth2 Authorization Server
+  kafka-basics-keycloak:
+    image: quay.io/keycloak/keycloak:26.3.3
+    container_name: kafka-basics-keycloak
+    hostname: kafka-basics-keycloak
     ports:
-      - "9092:9092"
+      - "55080:55080"  # HTTP port - both host and container use 55080
+      - "55443:55443"  # HTTPS port - both host and container use 55443
+    volumes:
+      - ./oauth2/keycloak/realms:/opt/keycloak/data/import
+      - ./oauth2/keycloak/keycloak.server.keystore.p12:/opt/keycloak/data/certs/keycloak.server.keystore.p12
+    command: "-v start --import-realm --features=token-exchange,authorization,scripts --http-port=55080 --https-port=55443 --https-key-store-file=/opt/keycloak/data/certs/keycloak.server.keystore.p12 --https-key-store-password=changeit --hostname=kafka-basics-keycloak"
     environment:
-      KAFKA_NODE_ID: 1
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
-      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka-basics-broker:29092,PLAINTEXT_HOST://localhost:9092'
-      KAFKA_LISTENERS: 'PLAINTEXT://kafka-basics-broker:29092,CONTROLLER://kafka-basics-broker:29093,PLAINTEXT_HOST://0.0.0.0:9092'
-      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
-      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
-      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka-basics-broker:29093'
-      KAFKA_PROCESS_ROLES: 'broker,controller'
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_HTTP_ENABLED=true
+      - KC_HOSTNAME=kafka-basics-keycloak
+      - KC_HOSTNAME_STRICT=false
+    networks:
+      - kafka-basics-network
+
+  # Kafka Broker with PLAINTEXT (testing) and OAuth2 (production) support
+  kafka-basics-broker:
+    image: kafka-basics/strimzi-oauth-kafka
+    build: ./oauth2/kafka
+    container_name: kafka-basics-broker
+    hostname: kafka-basics
+    user: "0:0"  # Run as root to avoid permission issues with volumes
+    ports:
+      - "55092:9092"  # PLAINTEXT - for easy testing (no auth, no SSL)
+      - "55093:9093"  # SASL_SSL with OAuth2 - for production use
+    depends_on:
+      kafka-basics-keycloak:
+        condition: service_started
+    volumes:
+      - ./oauth2/kafka/certificates:/tmp/kafka:ro
+      - kafka-basics-data:/tmp/kraft-combined-logs
+    environment:
+      # KAFKA Configuration
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_NODE_ID: "1"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka-basics:9091"
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_SASL_MECHANISM_CONTROLLER_PROTOCOL: SCRAM-SHA-512
+
+      # Listeners - PLAINTEXT (9092) for testing + OAuth (9093) for production
+      KAFKA_LISTENERS: CONTROLLER://kafka-basics:9091,PLAINTEXT://kafka-basics:9092,OAUTH://kafka-basics:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:SASL_PLAINTEXT,PLAINTEXT:PLAINTEXT,OAUTH:SASL_SSL
+      KAFKA_SASL_ENABLED_MECHANISMS: OAUTHBEARER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_SSL_SECURE_RANDOM_IMPLEMENTATION: SHA1PRNG
+      KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
+
+      # Controller authentication (SCRAM-SHA-512)
+      KAFKA_LISTENER_NAME_CONTROLLER_SASL_ENABLED_MECHANISMS: SCRAM-SHA-512
+      KAFKA_LISTENER_NAME_CONTROLLER_SCRAM__2DSHA__2D512_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"admin\" password=\"admin-secret\";"
+
+      # PLAINTEXT listener - no authentication, no SSL (for testing)
+      # No additional config needed - PLAINTEXT is default
+
+      # OAuth SSL Configuration (for port 9093)
+      KAFKA_LISTENER_NAME_OAUTH_SSL_KEYSTORE_LOCATION: /tmp/kafka/cluster.keystore.p12
+      KAFKA_LISTENER_NAME_OAUTH_SSL_KEYSTORE_PASSWORD: Z_pkTh9xgZovK4t34cGB2o6afT4zZg0L
+      KAFKA_LISTENER_NAME_OAUTH_SSL_KEYSTORE_TYPE: PKCS12
+      KAFKA_LISTENER_NAME_OAUTH_SSL_TRUSTSTORE_LOCATION: /tmp/kafka/cluster.truststore.p12
+      KAFKA_LISTENER_NAME_OAUTH_SSL_TRUSTSTORE_PASSWORD: Z_pkTh9xgZovK4t34cGB2o6afT4zZg0L
+      KAFKA_LISTENER_NAME_OAUTH_SSL_TRUSTSTORE_TYPE: PKCS12
+      KAFKA_LISTENER_NAME_OAUTH_SSL_CLIENT_AUTH: none
+
+      # OAuth SASL Configuration (for port 9093)
+      KAFKA_LISTENER_NAME_OAUTH_OAUTHBEARER_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required;"
+      KAFKA_LISTENER_NAME_OAUTH_OAUTHBEARER_SASL_LOGIN_CALLBACK_HANDLER_CLASS: io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler
+      KAFKA_LISTENER_NAME_OAUTH_OAUTHBEARER_SASL_SERVER_CALLBACK_HANDLER_CLASS: io.strimzi.kafka.oauth.server.JaasServerOauthValidatorCallbackHandler
+
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
-      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
-    volumes:
-      - kafka-basics-data:/tmp/kraft-combined-logs
+
+      KAFKA_PRINCIPAL_BUILDER_CLASS: io.strimzi.kafka.oauth.server.OAuthKafkaPrincipalBuilder
+
+      KAFKA_SUPER_USERS: User:service-account-kafka-broker
+
+      KAFKA_CONNECTIONS_MAX_REAUTH_MS: 3600000
+
+      # Strimzi OAuth Configuration
+      # Authentication config (for inter-broker)
+      OAUTH_CLIENT_ID: "kafka-broker"
+      OAUTH_CLIENT_SECRET: "kafka-broker-secret"
+      OAUTH_TOKEN_ENDPOINT_URI: "https://kafka-basics-keycloak:55443/realms/kafka-basics/protocol/openid-connect/token"
+
+      # Validation config
+      OAUTH_VALID_ISSUER_URI: "https://kafka-basics-keycloak:55443/realms/kafka-basics"
+      OAUTH_JWKS_ENDPOINT_URI: "https://kafka-basics-keycloak:55443/realms/kafka-basics/protocol/openid-connect/certs"
+
+      # SSL/TLS Configuration for OAuth endpoints
+      OAUTH_SSL_TRUSTSTORE_LOCATION: /tmp/kafka/ca-truststore.p12
+      OAUTH_SSL_TRUSTSTORE_PASSWORD: changeit
+      OAUTH_SSL_TRUSTSTORE_TYPE: PKCS12
+
+      # username extraction from JWT token claim
+      OAUTH_USERNAME_CLAIM: preferred_username
+
+      OAUTH_JWKS_REFRESH_MIN_PAUSE_SECONDS: "5"
+
+      # For start.sh script
+      KEYCLOAK_HOST: kafka-basics-keycloak
+      KEYCLOAK_URI: http://kafka-basics-keycloak:55080
+      REALM: kafka-basics
+
+      # Advertised listeners for both PLAINTEXT and OAuth
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:55092,OAUTH://localhost:55093
+
     healthcheck:
-      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092"]
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka-basics:9092"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -39,3 +127,4 @@ volumes:
 networks:
   kafka-basics-network:
     driver: bridge
+    name: kafka-basics-network

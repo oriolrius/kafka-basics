@@ -58,6 +58,18 @@ app.post('/api/produce', async (req, res) => {
   try {
     const { topic, key, message, format } = req.body;
 
+    if (!topic) {
+      return res.status(400).json({ error: 'Topic is required' });
+    }
+
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    if (!producer) {
+      return res.status(503).json({ error: 'Kafka producer not initialized yet' });
+    }
+
     let value;
     if (format === 'json') {
       try {
@@ -88,7 +100,7 @@ app.post('/api/produce', async (req, res) => {
     });
   } catch (error) {
     console.error('Error producing message:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message, success: false });
   }
 });
 
@@ -96,7 +108,15 @@ app.post('/api/produce', async (req, res) => {
 app.post('/api/consume', async (req, res) => {
   try {
     const { topic, format } = req.body;
-    
+
+    if (!topic) {
+      return res.status(400).json({ error: 'Topic is required', success: false });
+    }
+
+    if (!kafka) {
+      return res.status(503).json({ error: 'Kafka not initialized yet', success: false });
+    }
+
     // Check if consumer already exists for this topic
     if (consumers.has(topic)) {
       return res.json({ success: true, message: 'Consumer already running for this topic' });
@@ -112,7 +132,7 @@ app.post('/api/consume', async (req, res) => {
 
     await consumer.connect();
     console.log(`✅ Consumer connected for topic: ${topic}`);
-    
+
     // Subscribe from beginning to see existing messages
     await consumer.subscribe({ topic, fromBeginning: true });
 
@@ -123,7 +143,7 @@ app.post('/api/consume', async (req, res) => {
     await consumer.run({
       eachMessage: async ({ topic, partition, message }) => {
         console.log(`📨 Received message on ${topic}[${partition}]@${message.offset}`);
-        
+
         const msg = {
           partition,
           offset: message.offset,
@@ -140,7 +160,7 @@ app.post('/api/consume', async (req, res) => {
         }
 
         messages.push(msg);
-        
+
         // Keep only last 100 messages
         if (messages.length > 100) {
           messages.shift();
@@ -153,25 +173,35 @@ app.post('/api/consume', async (req, res) => {
     res.json({ success: true, consumerId });
   } catch (error) {
     console.error('Error starting consumer:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message, success: false });
   }
 });
 
 // Get consumed messages
 app.get('/api/consume/messages', (req, res) => {
-  const { topic } = req.query;
-  const allMessages = consumerMessages.get(topic) || [];
-  const lastIndex = lastSentIndex.get(topic) || 0;
-  
-  // Only return new messages since last poll
-  const newMessages = allMessages.slice(lastIndex);
-  
-  // Update the last sent index
-  lastSentIndex.set(topic, allMessages.length);
-  
-  console.log(`📬 Returning ${newMessages.length} new messages for ${topic} (total: ${allMessages.length})`);
-  
-  res.json({ messages: newMessages });
+  try {
+    const { topic } = req.query;
+
+    if (!topic) {
+      return res.status(400).json({ error: 'Topic parameter is required' });
+    }
+
+    const allMessages = consumerMessages.get(topic) || [];
+    const lastIndex = lastSentIndex.get(topic) || 0;
+
+    // Only return new messages since last poll
+    const newMessages = allMessages.slice(lastIndex);
+
+    // Update the last sent index
+    lastSentIndex.set(topic, allMessages.length);
+
+    console.log(`📬 Returning ${newMessages.length} new messages for ${topic} (total: ${allMessages.length})`);
+
+    res.json({ messages: newMessages });
+  } catch (error) {
+    console.error('Error getting consumed messages:', error);
+    res.status(500).json({ error: error.message, messages: [] });
+  }
 });
 
 // Stop consumer
@@ -199,6 +229,14 @@ app.post('/api/consume/stop', async (req, res) => {
 app.get('/api/topic/info', async (req, res) => {
   try {
     const { topic } = req.query;
+
+    if (!topic) {
+      return res.status(400).json({ error: 'Topic parameter is required' });
+    }
+
+    if (!admin) {
+      return res.status(503).json({ error: 'Kafka admin not initialized yet' });
+    }
 
     const topics = await admin.fetchTopicMetadata({ topics: [topic] });
     const topicData = topics.topics[0];
@@ -252,11 +290,20 @@ app.delete('/api/topic/delete', async (req, res) => {
 
 // List all messages in a topic
 app.get('/api/messages/list', async (req, res) => {
+  let consumer = null;
   try {
     const { topic } = req.query;
 
+    if (!topic) {
+      return res.status(400).json({ error: 'Topic parameter is required', messages: [] });
+    }
+
+    if (!kafka) {
+      return res.status(503).json({ error: 'Kafka not initialized yet', messages: [] });
+    }
+
     // Create a temporary consumer to read all messages
-    const consumer = kafka.consumer({
+    consumer = kafka.consumer({
       groupId: `list-messages-${Date.now()}`,
     });
 
@@ -295,12 +342,25 @@ app.get('/api/messages/list', async (req, res) => {
 
     await promise;
     clearTimeout(timeout);
-    await consumer.disconnect();
+
+    if (consumer) {
+      await consumer.disconnect();
+    }
 
     res.json({ messages });
   } catch (error) {
     console.error('Error listing messages:', error);
-    res.status(500).json({ error: error.message });
+
+    // Ensure consumer is disconnected on error
+    if (consumer) {
+      try {
+        await consumer.disconnect();
+      } catch (disconnectError) {
+        console.error('Error disconnecting consumer:', disconnectError);
+      }
+    }
+
+    res.status(500).json({ error: error.message, messages: [] });
   }
 });
 
@@ -809,7 +869,33 @@ app.get('/api/config', (req, res) => {
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    kafkaInitialized
+  });
+});
+
+// Global error handler - catches any errors that weren't handled by route handlers
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+
+  // Ensure we always send valid JSON
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal server error',
+    code: err.code || 'INTERNAL_ERROR',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// 404 handler - must be after all routes
+app.use((req, res) => {
+  res.status(404).json({
+    error: 'Not found',
+    path: req.path,
+    method: req.method,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Start server immediately, initialize Kafka in background

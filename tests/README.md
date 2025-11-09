@@ -13,7 +13,24 @@ pnpm test:headless
 pnpm test:report
 ```
 
-## Test Files (39 tests)
+## Configuration
+
+Tests use environment variables for configuration (no hardcoded values):
+
+```bash
+# Set custom base URL (default: http://localhost:3000)
+BASE_URL=http://localhost:3000 pnpm test
+
+# Set custom API URL (default: http://localhost:3001)
+API_URL=http://localhost:3001 pnpm test
+
+# Both can be set together
+BASE_URL=http://myserver:8080 API_URL=http://myserver:8081 pnpm test
+```
+
+Configuration is managed through `playwright.config.js` and environment variables.
+
+## Test Files (47 tests)
 
 | File | Tests | What it covers |
 |------|-------|----------------|
@@ -24,6 +41,7 @@ pnpm test:report
 | `admin.spec.js` | 6 | Topic info, message listing, deletion |
 | `messages.spec.js` | 5 | Message browsing, metadata, timestamps |
 | `screenshots.spec.js` | 9 | Screenshots for documentation (includes Overview) |
+| `api-json-responses.spec.js` | 11 | API error handling, JSON response validation |
 
 ## Running Tests
 
