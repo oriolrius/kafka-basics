@@ -45,11 +45,7 @@ services:
 
   # Backend API Server
   backend:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-      target: backend
-    image: kafka-basics-backend:${IMAGE_TAG:-latest}
+    image: ghcr.io/oriolrius/kafka-basics/backend:${IMAGE_TAG:-latest}
     container_name: kafka-basics-backend
     restart: unless-stopped
     networks:
@@ -105,13 +101,7 @@ services:
 
   # Frontend UI
   frontend:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-      target: frontend
-      args:
-        - VITE_API_URL=${VITE_API_URL:-/api}
-    image: kafka-basics-frontend:${IMAGE_TAG:-latest}
+    image: ghcr.io/oriolrius/kafka-basics/frontend:${IMAGE_TAG:-latest}
     container_name: kafka-basics-frontend
     restart: unless-stopped
     networks:
